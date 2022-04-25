@@ -1,0 +1,19 @@
+# Goland settings
+.idea
+
+# VS Code settings
+.vscode
+
+.data
+.bin
+.DS_Store
+
+# Binaries for programs and plugins
+*.exe
+*.exe~
+
+# Go workspace file
+go.work
+
+# Project files
+bin/

@@ -1,0 +1,48 @@
+version: '3.8'
+
+services:
+  apiserver:
+    image: unitask-apiserver
+    build:
+      context: .
+      dockerfile: Dockerfile
+    ports:
+      - "8080:8080"
+    depends_on:
+      - postgres
+    networks:
+      - backend
+    env_file:
+      - .env
+    environment:
+      POSTGRES_HOST: postgres
+
+  postgres:
+    image: postgres:14.2-alpine
+    container_name: postgres
+    restart: always
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+      POSTGRES_DB: apiserver_unitask
+    ports:
+      - "5432:5432"
+    networks:
+      - backend
+#    volumes:
+#      - postgres-data:/var/lib/postgresql/data
+    healthcheck: # deprecated? d-c version is not 2
+      test: [ "CMD-SHELL", "pg_isready -U postgres" ]
+      interval: 5s
+      timeout: 5s
+      retries: 2
+
+networks:
+  backend:
+    driver: bridge
+
+#volumes:
+#  postgres-data:
+#    driver: postgres
+#    driver_opts:
+#      size: "5GiB"
