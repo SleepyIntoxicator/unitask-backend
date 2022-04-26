@@ -5,14 +5,14 @@
 ## Definition
 
 University Task Manager [backend].
-Monolithic API-server for the Unitask service.
+Monolithic REST API server for the Unitask service.
 
 ## Architecture
 
 - cmd\apiserver - main package
 - configs -  working configs
 - doc
-- internal\app\
+- internal\
   - api - subject models 
   - apiserver - request handlers
     - api.go - API entries
@@ -43,7 +43,7 @@ N. (1 - 5) - Task priority: from 1 (high) to 5 (low). v - done
 4. (5) JWT Tokens: Embed FingerPrint for the user. 
    Define the items than define the user's devices. Introduce the concept of a user session.
    1. IP
-   2. device (моб\PC)
+   2. device (mobile\PC)
    3. date of last use (request)
    4. (5) Add statistics collection of the devices from which requests come.
 
