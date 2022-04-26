@@ -1,4 +1,4 @@
-module back-end
+module backend
 
 go 1.16
 
