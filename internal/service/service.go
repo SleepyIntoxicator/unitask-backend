@@ -1,7 +1,7 @@
 package service
 
 import (
-	"back-end/internal/app/api/v1/models"
+	"backend/internal/api/v1/models"
 	"context"
 	"github.com/dgrijalva/jwt-go"
 	"github.com/google/uuid"

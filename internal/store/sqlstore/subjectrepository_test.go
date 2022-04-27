@@ -1,8 +1,8 @@
 package sqlstore
 
 import (
-	"back-end/internal/app/api/v1/models"
-	"back-end/internal/app/store"
+	"backend/internal/api/v1/models"
+	"backend/internal/store"
 	"github.com/stretchr/testify/assert"
 	"testing"
 )
@@ -12,7 +12,6 @@ func TestSubjectRepository_Create(t *testing.T) {
 	defer teardown("subject")
 
 	subj := models.TestSubject(t)
-
 
 	s := New(db)
 	assert.NoError(t, s.Subject().Create(subj))

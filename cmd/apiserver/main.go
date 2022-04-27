@@ -1,7 +1,7 @@
 package main
 
 import (
-	"back-end/internal/app/apiserver"
+	"backend/internal/apiserver"
 	"flag"
 )
 

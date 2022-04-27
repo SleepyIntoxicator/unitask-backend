@@ -1,9 +1,9 @@
 package services
 
 import (
-	"back-end/internal/app/api/v1/models"
-	"back-end/internal/app/store/sqlstore"
-	cfg "back-end/pkg/config"
+	"backend/internal/api/v1/models"
+	"backend/internal/store/sqlstore"
+	cfg "backend/pkg/config"
 	"fmt"
 	"github.com/dgrijalva/jwt-go"
 	"github.com/google/uuid"
@@ -48,7 +48,7 @@ func TestAuthService_RegisterMultipleUser(t *testing.T) {
 		assert.NoError(t, err)
 		assert.NotNil(t, usersExample[i])
 
-		time.Sleep(time.Microsecond * 1)	//For time.Now()
+		time.Sleep(time.Microsecond * 1) //For time.Now()
 	}
 }
 

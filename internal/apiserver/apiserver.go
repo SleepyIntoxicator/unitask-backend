@@ -1,9 +1,9 @@
 package apiserver
 
 import (
-	cfg "back-end/internal/app/config"
-	"back-end/internal/app/store/sqlstore"
-	"back-end/pkg/database/postgres"
+	cfg "backend/internal/config"
+	"backend/internal/store/sqlstore"
+	"backend/pkg/database/postgres"
 	"context"
 	"errors"
 	"fmt"

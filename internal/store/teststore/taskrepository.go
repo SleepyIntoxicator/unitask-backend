@@ -1,7 +1,7 @@
 package teststore
 
 import (
-	"back-end/internal/app/api/v1/models"
+	"backend/internal/api/v1/models"
 )
 
 type TaskRepository struct {
@@ -91,4 +91,3 @@ func (r *TaskRepository) RemoveUserFromTask(taskID, userID int) error {
 func (r *TaskRepository) DeleteTask(id int) error {
 	panic("implement me")
 }
-

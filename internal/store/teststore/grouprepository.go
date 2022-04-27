@@ -1,10 +1,10 @@
 package teststore
 
 import (
-	"back-end/internal/app/api/v1/models"
+	"backend/internal/api/v1/models"
 )
 
-type GroupRepository struct{
+type GroupRepository struct {
 	store *Store
 }
 
@@ -91,5 +91,3 @@ func (r *GroupRepository) DeleteGroupInvites(groupID int) error {
 func (r *GroupRepository) DeleteGroupInviteByHash(hash string) error {
 	panic("implement me")
 }
-
-

@@ -1,8 +1,8 @@
 package apiserver
 
 import (
-	"back-end/internal/app/api/v1/models"
-	"back-end/internal/app/service"
+	"backend/internal/api/v1/models"
+	"backend/internal/service"
 	"github.com/gorilla/mux"
 	"net/http"
 	"strconv"
@@ -63,4 +63,3 @@ func (s *server) handleUser() http.HandlerFunc {
 		s.respond(w, r, http.StatusOK, response{User: *user})
 	}
 }
-
