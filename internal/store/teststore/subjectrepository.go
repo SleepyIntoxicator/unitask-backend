@@ -1,10 +1,10 @@
 package teststore
 
 import (
-	"back-end/internal/app/api/v1/models"
+	"backend/internal/api/v1/models"
 )
 
-type SubjectRepository struct{
+type SubjectRepository struct {
 	store *Store
 }
 
@@ -23,4 +23,3 @@ func (r *SubjectRepository) Find(i int) (*models.Subject, error) {
 func (r *SubjectRepository) Delete(i int) (*models.Subject, error) {
 	panic("implement me")
 }
-

@@ -1,9 +1,9 @@
 package services
 
 import (
-	"back-end/internal/app/api/v1/models"
-	"back-end/internal/app/service"
-	"back-end/internal/app/store"
+	"backend/internal/api/v1/models"
+	"backend/internal/service"
+	"backend/internal/store"
 )
 
 type SubjectService struct {

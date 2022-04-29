@@ -1,7 +1,7 @@
 package store
 
 import (
-	"back-end/internal/app/api/v1/models"
+	"backend/internal/api/v1/models"
 	"github.com/google/uuid"
 )
 
@@ -46,8 +46,6 @@ type UserRepository interface {
 	/*FindByFullName(string) (*models.User, error)*/
 }
 
-
-
 type UniversityRepository interface {
 	Create(university *models.University) error
 	Find(universityID int) (*models.University, error)
@@ -69,7 +67,7 @@ type GroupRepository interface {
 	GetGroupsUserMemberOf(userID int) ([]models.Group, error) //Get IDs of groups that this user is a member of
 	GetGroupMembers(groupID int) ([]models.User, error)
 	GetMembersCount(groupID int) (int, error)
-	GetMemberRoles(userID, groupID int) ([]models.Role, error)	//Get the roles that this user have
+	GetMemberRoles(userID, groupID int) ([]models.Role, error) //Get the roles that this user have
 	GetRolePermissions(roleID int) ([]models.Permission, error)
 
 	GetRole(roleID int) (*models.Role, error)
@@ -97,21 +95,21 @@ type TaskRepository interface {
 
 	Update(taskID int, updTask *models.UpdateTask) error
 
-	AssignSubtask(taskID, subtaskID int)		error
-	AssignTaskSequence(taskID, nextTaskID int)	error
-	AssignTaskToGroup(taskID, groupID int)		error
-	AssignTaskToUser(taskID, userID int)		error
+	AssignSubtask(taskID, subtaskID int) error
+	AssignTaskSequence(taskID, nextTaskID int) error
+	AssignTaskToGroup(taskID, groupID int) error
+	AssignTaskToUser(taskID, userID int) error
 
-	FindPrevTasks(taskID int)		([]int, error)
-	FindNextTasks(taskID int)		([]int, error)
-	FindParentTask(taskID int)		(int, error)
-	FindSubtasks(taskID int) 		([]int, error)
+	FindPrevTasks(taskID int) ([]int, error)
+	FindNextTasks(taskID int) ([]int, error)
+	FindParentTask(taskID int) (int, error)
+	FindSubtasks(taskID int) ([]int, error)
 
-	FindTasksOnGroup(groupID int)	([]models.Task, error)
-	FindTasksOnUser(userID int)		([]models.Task, error)
-	FindUserLocalTasks(userID int)	([]models.Task, error)
-	FindGroupsOnTask(taskID int)	([]int, error)
-	FindUsersOnTask(taskID int)		([]int, error)
+	FindTasksOnGroup(groupID int) ([]models.Task, error)
+	FindTasksOnUser(userID int) ([]models.Task, error)
+	FindUserLocalTasks(userID int) ([]models.Task, error)
+	FindGroupsOnTask(taskID int) ([]int, error)
+	FindUsersOnTask(taskID int) ([]int, error)
 
 	RemoveGroupFromTask(taskID, groupID int) error
 	RemoveUserFromTask(taskID, userID int) error
@@ -125,7 +123,6 @@ type TaskRepository interface {
 type TaskStatusTypeRepository interface {
 	Create(statusType *models.TaskStatusType) error
 	GetAllTypes() (*[]models.TaskStatusType, error)
-
 }
 
 type TaskStatusRepository interface {

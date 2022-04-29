@@ -17,3 +17,4 @@ go.work
 
 # Project files
 bin/
+.env

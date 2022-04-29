@@ -31,7 +31,6 @@ type (
 	}
 
 	PostgresConfig struct {
-		URL      string //Deprecated
 		Host     string
 		Username string
 		Password string
@@ -61,8 +60,6 @@ type (
 )
 
 func PrintConfig(cfg Config) {
-	fmt.Printf("\n\tDB:\tPOSTGRES:\tURL: %s\n", cfg.Postgres.URL)
-
 	fmt.Printf("\tHTTP:\tHOST: %s\n", cfg.HTTP.Host)
 	fmt.Printf("\tHTTP:\tPORT: %s\n", cfg.HTTP.Port)
 	fmt.Printf("\tHTTP:\tR_TIMEOUT: %s\n", cfg.HTTP.ReadTimeout)
@@ -90,7 +87,9 @@ func Init(configsDir string) (*Config, error) {
 
 	setFromEnv(&cfg)
 
-	PrintConfig(cfg)
+	if cfg.Environment == EnvDev {
+		PrintConfig(cfg)
+	}
 
 	return &cfg, nil
 }
@@ -112,9 +111,6 @@ func setFromEnv(cfg *Config) {
 
 	if input, is = os.LookupEnv("APP_ENV"); is {
 		cfg.Environment = input
-	}
-	if input, is = os.LookupEnv("POSTGRES_URL"); is {
-		cfg.Postgres.URL = input
 	}
 	if input, is = os.LookupEnv("POSTGRES_HOST"); is {
 		cfg.Postgres.Host = input

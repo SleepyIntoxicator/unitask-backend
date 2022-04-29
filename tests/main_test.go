@@ -1,7 +1,7 @@
 package tests
 
 import (
-	"back-end/internal/app/apiserver"
+	"backend/internal/apiserver"
 	"fmt"
 	vegeta "github.com/tsenart/vegeta/lib"
 	"syscall"

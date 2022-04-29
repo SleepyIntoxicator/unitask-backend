@@ -1,9 +1,9 @@
 package apiserver
 
 import (
-	"back-end/internal/app/api/v1/models"
-	"back-end/internal/app/config"
-	"back-end/internal/app/store/teststore"
+	"backend/internal/api/v1/models"
+	"backend/internal/config"
+	"backend/internal/store/teststore"
 	"bytes"
 	"encoding/json"
 	"github.com/stretchr/testify/assert"

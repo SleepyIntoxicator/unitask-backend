@@ -1,11 +1,11 @@
 package sqlstore
 
 import (
-	"back-end/internal/app/api/v1/models"
-	"back-end/internal/app/store"
+	"backend/internal/api/v1/models"
+	"backend/internal/store"
 	"github.com/google/uuid"
 	"time"
-	//"back-end/internal/app/store"
+	//"backend/internal/store"
 )
 
 type AuthRepository struct {

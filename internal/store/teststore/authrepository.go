@@ -1,13 +1,13 @@
 package teststore
 
 import (
-	"back-end/internal/app/api/v1/models"
+	"backend/internal/api/v1/models"
 	"github.com/google/uuid"
 )
 
 type AuthRepository struct {
 	store *Store
-	users map[int]*models.User	//Map[user.email]*User
+	users map[int]*models.User //Map[user.email]*User
 }
 
 func (r *AuthRepository) RegisterApp(app *models.RegisteredApp) error {

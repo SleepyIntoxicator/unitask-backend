@@ -1,7 +1,7 @@
 package sqlstore
 
 import (
-	"back-end/internal/app/api/v1/models"
+	"backend/internal/api/v1/models"
 	"fmt"
 	"github.com/stretchr/testify/assert"
 	"testing"

@@ -1,12 +1,12 @@
 package teststore_test
 
 import (
-	"back-end/internal/app/api/v1/models"
-	"back-end/internal/app/store"
-	"back-end/internal/app/store/teststore"
+	"backend/internal/api/v1/models"
+	"backend/internal/store"
+	"backend/internal/store/teststore"
 	"github.com/stretchr/testify/assert"
 	"testing"
-	//"back-end/internal/app/store"
+	//"backend/internal/store"
 )
 
 func TestUserRepository_Create(t *testing.T) {

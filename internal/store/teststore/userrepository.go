@@ -1,16 +1,14 @@
 package teststore
 
 import (
-	"back-end/internal/app/api/v1/models"
-	"back-end/internal/app/store"
+	"backend/internal/api/v1/models"
+	"backend/internal/store"
 )
 
 type UserRepository struct {
 	store *Store
-	users map[int]*models.User	//Map[user.email]*User
+	users map[int]*models.User //Map[user.email]*User
 }
-
-
 
 func (r *UserRepository) Create(u *models.User) error {
 	if err := u.Validate(); err != nil {
@@ -58,9 +56,9 @@ func (r *UserRepository) FindByEmail(email string) (*models.User, error) {
 
 func (r *UserRepository) CreateTester() (*models.User, error) {
 	u := &models.User{
-		Login: "tester",
+		Login:    "tester",
 		FullName: "Tester tester",
-		Email: "Tester@example.org",
+		Email:    "Tester@example.org",
 		Password: "Testerpassword",
 	}
 

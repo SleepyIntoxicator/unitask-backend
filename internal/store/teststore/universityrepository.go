@@ -1,7 +1,7 @@
 package teststore
 
 import (
-	"back-end/internal/app/api/v1/models"
+	"backend/internal/api/v1/models"
 )
 
 type UniversityRepository struct {
