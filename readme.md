@@ -1,6 +1,6 @@
 # Unitask [Backend] ![GO][go-badge]
 
-[go-badge]: https://img.shields.io/github/go-mod/go-version/p12s/furniture-store?style=plastic
+[go-badge]: https://img.shields.io/github/go-mod/go-version/SleepyIntoxicator/unitask-backend?style=plastic
 
 ## Definition
 
@@ -31,6 +31,10 @@ Monolithic REST API server for the Unitask service.
 ### Prerequisites
 - go 1.17
 - Docker & docker-compose
+
+---
+
+The .env file from the dev environment.
 
 ----
 TODO list:
