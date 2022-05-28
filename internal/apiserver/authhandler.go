@@ -337,7 +337,7 @@ func (s *server) handleUserSignIn() http.HandlerFunc {
 			return
 		}
 
-		user, err := s.services.User().Find(userToken.UserID)
+		user, err := s.services.User().Find(r.Context(), userToken.UserID)
 		if err != nil {
 			s.error(w, r, http.StatusInternalServerError, err)
 			return
@@ -430,7 +430,7 @@ func (s *server) handleUserToken() http.HandlerFunc {
 				s.error(w, r, http.StatusInternalServerError, err)
 				return
 			}
-			user, err = s.services.User().Find(tokenClaims.UserID)
+			user, err = s.services.User().Find(r.Context(), tokenClaims.UserID)
 		}
 		if user == nil {
 			s.error(w, r, http.StatusInternalServerError, err)
