@@ -7,10 +7,11 @@ postgres:
   name: apiserver_unitask
 
 auth:
-  appTokenTTL: 30d
-  accessTokenTTL: 2h
-  refreshTokenTTL: 720h
-  signingKey: startKey
+  appTokenTTL: 2160h
+  jwt:
+    accessTokenTTL: 2h
+    refreshTokenTTL: 720h
+    signingKey: startKey
 
 limiter:
   rps: 10

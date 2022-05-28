@@ -10,6 +10,7 @@ import (
 const (
 	defaultHttpPort        = "8000"
 	defaultHttpRWTimeout   = 10 * time.Second
+	defaultAppTokenTTL     = 24 * time.Hour * 90
 	defaultAccessTokenTTL  = 15 * time.Minute
 	defaultRefreshTokenTTL = 24 * time.Hour * 30
 	defaultLimiterRPS      = 200 //TODO: Add limiter
@@ -45,7 +46,8 @@ type (
 	}
 
 	AuthConfig struct {
-		JWT JWTConfig
+		JWT         JWTConfig
+		AppTokenTTL time.Duration `mapstructure:"appTokenTTL"`
 	}
 
 	JWTConfig struct {
@@ -65,6 +67,7 @@ func PrintConfig(cfg Config) {
 	fmt.Printf("\tHTTP:\tR_TIMEOUT: %s\n", cfg.HTTP.ReadTimeout)
 	fmt.Printf("\tHTTP:\tW_TIMEOUT: %s\n\n", cfg.HTTP.WriteTimeout)
 
+	fmt.Printf("\tAUTH:\tApp Token TTL: %s\n", cfg.Auth.AppTokenTTL)
 	fmt.Printf("\tAUTH:\tJWT:\tAccess TTL: %s\n", cfg.Auth.JWT.AccessTokenTTL)
 	fmt.Printf("\tAUTH:\tJWT:\tRefresh TTL: %s\n", cfg.Auth.JWT.RefreshTokenTTL)
 	fmt.Printf("\tAUTH:\tJWT:\tSigningKey: %s\n\n", cfg.Auth.JWT.SigningKey)
@@ -99,6 +102,7 @@ func populateDefaults() {
 	viper.SetDefault("http.host", defaultHttpPort)
 	viper.SetDefault("http.timeouts.read", defaultHttpRWTimeout)
 	viper.SetDefault("http.timeouts.write", defaultHttpRWTimeout)
+	viper.SetDefault("auth.appTokenTTL", defaultAppTokenTTL)
 	viper.SetDefault("auth.accessTokenTTL", defaultAccessTokenTTL)
 	viper.SetDefault("auth.refreshTokenTTL", defaultRefreshTokenTTL)
 	viper.SetDefault("limiter.rps", defaultLimiterRPS)
@@ -162,7 +166,11 @@ func unmarshal(cfg *Config) error {
 		return err
 	}
 
-	if err := viper.UnmarshalKey("auth", &cfg.Auth.JWT); err != nil {
+	if err := viper.UnmarshalKey("auth", &cfg.Auth); err != nil {
+		return err
+	}
+
+	if err := viper.UnmarshalKey("auth.jwt", &cfg.Auth.JWT); err != nil {
 		return err
 	}
 

@@ -299,7 +299,7 @@ func (s *AuthService) GenerateJWTToken(userID int) (*jwt.Token, error) {
 	t := jwt.NewWithClaims(jwt.SigningMethodES256, &tokenClaims{
 		jwt.StandardClaims{
 			IssuedAt:  time.Now().Unix(),
-			ExpiresAt: time.Now().Add(TokenTTL).Unix(),
+			ExpiresAt: time.Now().Add(s.service.config.Auth.JWT.RefreshTokenTTL).Unix(),
 		},
 		user.ID,
 	})
@@ -406,7 +406,7 @@ func (s *AuthService) GetAppToken(appID uuid.UUID) (*models.AppToken, error) {
 		//Добавляем новый токен в базу
 		newAppToken := &models.AppToken{
 			IssueTokenTimestamp: time.Now(),
-			ExpirationTimestamp: time.Now().Add(appTokenTTL),
+			ExpirationTimestamp: time.Now().Add(s.service.config.Auth.AppTokenTTL),
 			StartTimestamp:      time.Now(),
 			AppID:               appID,
 		}
