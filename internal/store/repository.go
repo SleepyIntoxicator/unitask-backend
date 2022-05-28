@@ -2,28 +2,29 @@ package store
 
 import (
 	"backend/internal/api/v1/models"
+	"context"
 	"github.com/google/uuid"
 )
 
 type AuthRepository interface {
-	RegisterApp(app *models.RegisteredApp) error
-	DeleteApp(appUUID uuid.UUID) error
-	GetApp(appUUID uuid.UUID) (*models.RegisteredApp, error)
+	RegisterApp(ctx context.Context, app *models.RegisteredApp) error
+	DeleteApp(ctx context.Context, appUUID uuid.UUID) error
+	GetApp(ctx context.Context, appUUID uuid.UUID) (*models.RegisteredApp, error)
 	GetAppByName(name string) (*models.RegisteredApp, error)
 
-	AddAppToken(t *models.AppToken) error
-	RemoveAppTokens(appUUID uuid.UUID) error
-	GetAppTokenInfo(token string) (*models.AppToken, error)
+	AddAppToken(ctx context.Context, t *models.AppToken) error
+	RemoveAppTokens(ctx context.Context, appUUID uuid.UUID) error
+	GetAppTokenInfo(ctx context.Context, token string) (*models.AppToken, error)
 	//Returns register app info
-	GetAppTokenByAppUUID(appUUID uuid.UUID) (*models.AppToken, error)
+	GetAppTokenByAppUUID(ctx context.Context, appUUID uuid.UUID) (*models.AppToken, error)
 
-	AddUserToken(t *models.UserToken) error
-	GetUserToken(userID int) (*models.UserToken, error)
-	RemoveUserTokens(userID int) (int, error)
-	ClearUserTokens() error
+	AddUserToken(ctx context.Context, t *models.UserToken) error
+	GetUserToken(ctx context.Context, userID int) (*models.UserToken, error)
+	RemoveUserTokens(ctx context.Context, userID int) (int, error)
+	ClearUserTokens(ctx context.Context) error
 
-	SetUserTokenInvalidByToken(token string) error
-	SetUserTokenInvalidByUserID(userID int) error
+	SetUserTokenInvalidByToken(ctx context.Context, token string) error
+	SetUserTokenInvalidByUserID(ctx context.Context, userID int) error
 }
 
 type UserRepository interface {

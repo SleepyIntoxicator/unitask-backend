@@ -3,7 +3,6 @@ package service
 import (
 	"backend/internal/api/v1/models"
 	"context"
-	"github.com/dgrijalva/jwt-go"
 	"github.com/google/uuid"
 	"github.com/sirupsen/logrus"
 	"time"
@@ -21,52 +20,43 @@ type Service interface {
 }
 
 type AuthService interface {
-	GetSigningKey() string
+	RegisterApp(ctx context.Context, app *models.RegisteredApp) error
 
-	// GenerateJWTToken Not used. This method generates a JWT token.
-	//Returns a jwt token and an error, if any.
-	GenerateJWTToken(userID int) (*jwt.Token, error)
-
-	// RestoreJWTToken Not used. Restore JWT token if refreshToken id valid.
-	RestoreJWTToken(userID int, refreshToken string) (*models.UserToken, error)
-
-	// CheckAccessToken Check accessToken and returns valid=true, if it is valid
-	CheckAccessToken(accessToken string) (*models.UAccessTokenClaims, error)
-
-	// CheckRefreshToken Check refreshToken and returns valid=true, if it is valid
-	CheckRefreshToken(refreshToken string, userID int) (*models.UserToken, error)
-
-	RegisterApp(app *models.RegisteredApp) error
-
-	DeleteApp(appID, appSecret, appToken string) error
+	DeleteApp(ctx context.Context, appID, appSecret, appToken string) error
 
 	// RegisterUser Register new user. Receive *model.User. Return ErrMailLoginAlreadyUsing or nil
-	RegisterUser(*models.User) error
+	RegisterUser(ctx context.Context, user *models.User) error
 
-	UserSignIn(userSignIn *models.UserSignIn) (*models.UserToken, error)
+	UserSignIn(ctx context.Context, userSignIn *models.UserSignIn) (*models.UserToken, error)
 
-	UserLogout(userID int) error
+	UserLogout(ctx context.Context, userID int) error
 
-	AuthenticateUser(accessToken string) (*models.User, error)
+	AuthenticateUser(ctx context.Context, accessToken string) (*models.User, error)
 
-	// IsAppTokenValid App token validation. Returns true, if valid
-	IsAppTokenValid(appToken string) (bool, error)
+	RefreshPairAccessRefreshToken(ctx context.Context, userID int, accessToken, refreshToken string) (*models.UserToken, error)
+
+	// CheckAccessToken Check accessToken and returns valid=true, if it is valid.
+	CheckAccessToken(accessToken string) (*models.UAccessTokenClaims, error)
+
+	// CheckRefreshToken Check refreshToken and returns valid=true, if it is valid.
+	CheckRefreshToken(ctx context.Context, refreshToken string, userID int) (*models.UserToken, error)
 
 	// IsAppSecretValid App secret validation. Returns true, if it's valid.
-	//May returns service.ErrNoRowsFound or else
-	IsAppSecretValid(appID, appSecret string) (bool, error)
+	//May returns service.ErrNoRowsFound or else.
+	IsAppSecretValid(ctx context.Context, appID, appSecret string) (bool, error)
 
-	GetAppToken(appID uuid.UUID) (*models.AppToken, error)
+	// IsAppTokenValid App token validation. Returns true, if valid.
+	IsAppTokenValid(ctx context.Context, appToken string) (bool, error)
 
-	//GetAppInfoByToken ...
-	GetAppInfoByToken(token string) (*models.RegisteredApp, error)
+	GetAppToken(ctx context.Context, appID uuid.UUID) (*models.AppToken, error)
 
-	//GetTokenInfo ...
-	GetTokenInfo(token string) (*models.AppToken, error)
+	//GetAppInfoByAppToken ...
+	GetAppInfoByAppToken(ctx context.Context, token string) (*models.RegisteredApp, error)
+
+	//GetAppTokenInfo returns the app token from store.
+	GetAppTokenInfo(ctx context.Context, token string) (*models.AppToken, error)
 
 	GenerateAppToken(app *models.RegisteredApp, startTimestamp time.Time, expirationTimestamp time.Time) (string, error)
-
-	RefreshPairAccessRefreshToken(userID int, accessToken, refreshToken string) (*models.UserToken, error)
 
 	GenerateAccessToken(user *models.User, startTimestamp time.Time) (string, error)
 

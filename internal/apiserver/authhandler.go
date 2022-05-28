@@ -56,13 +56,13 @@ func (s *server) authenticateApp(next http.Handler) http.Handler {
 			return
 		}
 
-		isValid, err := s.services.Auth().IsAppTokenValid(appToken)
+		isValid, err := s.services.Auth().IsAppTokenValid(r.Context(), appToken)
 		if !isValid || err != nil {
 			s.error(w, r, http.StatusUnauthorized, service.ErrInvalidAppToken)
 			return
 		}
 
-		app, err := s.services.Auth().GetAppInfoByToken(appToken)
+		app, err := s.services.Auth().GetAppInfoByAppToken(r.Context(), appToken)
 		if err != nil {
 			s.error(w, r, http.StatusInternalServerError, err)
 			return
@@ -95,7 +95,7 @@ func (s *server) authenticateUser(next http.Handler) http.Handler {
 			return
 		}
 
-		user, err := s.services.Auth().AuthenticateUser(accessToken)
+		user, err := s.services.Auth().AuthenticateUser(r.Context(), accessToken)
 		if err != nil {
 			s.errorV2(w, r, http.StatusUnauthorized, models.New(err, http.StatusUnauthorized, "invalid_access_token"))
 			return
@@ -140,7 +140,7 @@ func (s *server) handleAppRegister() http.HandlerFunc {
 		app := &models.RegisteredApp{
 			AppName: req.AppName,
 		}
-		err = s.services.Auth().RegisterApp(app)
+		err = s.services.Auth().RegisterApp(r.Context(), app)
 		if err != nil {
 			s.error(w, r, http.StatusInternalServerError, err)
 			return
@@ -162,7 +162,7 @@ func (s *server) handleAppAuthorization() http.HandlerFunc {
 		appToken := r.Header.Get("X-App-Token")
 		//	Если приложение уже авторизовано
 		if appToken != "" {
-			isTokenValid, err := s.services.Auth().IsAppTokenValid(appToken)
+			isTokenValid, err := s.services.Auth().IsAppTokenValid(r.Context(), appToken)
 			if err != nil && err != service.ErrInvalidAppToken {
 				s.error(w, r, http.StatusInternalServerError, err)
 				return
@@ -185,7 +185,7 @@ func (s *server) handleAppAuthorization() http.HandlerFunc {
 			return
 		}
 
-		isAppSecretValid, err := s.services.Auth().IsAppSecretValid(reqAppID, appSecret)
+		isAppSecretValid, err := s.services.Auth().IsAppSecretValid(r.Context(), reqAppID, appSecret)
 		if err == service.ErrInvalidAppID || err == service.ErrAppAuthorization {
 			s.error(w, r, http.StatusServiceUnavailable, err)
 			return
@@ -201,7 +201,7 @@ func (s *server) handleAppAuthorization() http.HandlerFunc {
 				return
 			}
 
-			appToken, err := s.services.Auth().GetAppToken(appID)
+			appToken, err := s.services.Auth().GetAppToken(r.Context(), appID)
 			if err != nil {
 				s.error(w, r, http.StatusServiceUnavailable, err)
 				return
@@ -232,7 +232,7 @@ func (s *server) handleAppDelete() http.HandlerFunc {
 
 		accessToken := r.Header.Get("X-App-Token")
 
-		err = s.services.Auth().DeleteApp(req.AppID, req.AppSecret, accessToken)
+		err = s.services.Auth().DeleteApp(r.Context(), req.AppID, req.AppSecret, accessToken)
 		if err != nil {
 			s.error(w, r, http.StatusInternalServerError, err)
 			return
@@ -271,7 +271,7 @@ func (s *server) handleUserRegister() http.HandlerFunc {
 			Password: req.Password,
 		}
 
-		err := s.services.Auth().RegisterUser(u)
+		err := s.services.Auth().RegisterUser(r.Context(), u)
 		if err != nil {
 			if err != service.ErrEmailIsAlreadyOccupied || err != service.ErrLoginIsAlreadyOccupied {
 				s.error(w, r, http.StatusInternalServerError, err)
@@ -326,7 +326,7 @@ func (s *server) handleUserSignIn() http.HandlerFunc {
 			return
 		}
 
-		userToken, err := s.services.Auth().UserSignIn(&models.UserSignIn{
+		userToken, err := s.services.Auth().UserSignIn(r.Context(), &models.UserSignIn{
 			Login:    req.Login,
 			Email:    req.Email,
 			Password: req.Password,
@@ -369,7 +369,7 @@ func (s *server) handleUserLogout() http.HandlerFunc {
 			return
 		}
 
-		err = s.services.Auth().UserLogout(user.ID)
+		err = s.services.Auth().UserLogout(r.Context(), user.ID)
 		if err != nil {
 			s.error(w, r, http.StatusInternalServerError, err)
 			return
@@ -408,7 +408,7 @@ func (s *server) handleUserToken() http.HandlerFunc {
 			return
 		}
 
-		user, err := s.services.Auth().AuthenticateUser(accessToken)
+		user, err := s.services.Auth().AuthenticateUser(r.Context(), accessToken)
 		switch err {
 		case nil:
 			//case error is nil
@@ -437,7 +437,7 @@ func (s *server) handleUserToken() http.HandlerFunc {
 			return
 		}
 
-		newToken, err := s.services.Auth().RefreshPairAccessRefreshToken(user.ID, accessToken, req.RefreshToken)
+		newToken, err := s.services.Auth().RefreshPairAccessRefreshToken(r.Context(), user.ID, accessToken, req.RefreshToken)
 		switch err {
 		case service.ErrInvalidTokenPair, service.ErrAccessTokenRefreshRateExceeded:
 			s.error(w, r, http.StatusTooManyRequests, err)
@@ -458,54 +458,3 @@ func (s *server) handleUserToken() http.HandlerFunc {
 		s.respond(w, r, http.StatusOK, res)
 	}
 }
-
-/*
-func (s *server) authenticateUser(next http.Handler) http.Handler {
-	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-
-		var accessToken string
-		_, err := fmt.Sscanf(r.Header.Get("Authorization"), "Bearer %s", &accessToken)
-		if err != nil {
-			s.error(w, r, http.StatusInternalServerError, err)
-			return
-		}
-
-		type claims struct {
-			jwt.StandardClaims
-			UserID int    `json:"user_id"`
-			Login  string `json:"login"`
-			Iat    int64  `json:"iat"`
-			Exp    int64  `json:"exp"`
-			Nbf    int64  `json:"nbf"`
-		}
-
-		tokenClaims := &claims{}
-
-		token, err := jwt.ParseWithClaims(accessToken, &claims{}, func(*jwt.Token) (interface{}, error) {
-			return []byte(s.services.Auth().GetSigningKey()), nil
-		})
-		if err != nil {
-			s.error(w, r, http.StatusOK, err)
-			return
-		}
-		tokenClaims, ok := token.Claims.(*claims)
-		if !ok && !token.Valid {
-			s.error(w, r, http.StatusOK, service.ErrInvalidUserToken)
-			return
-		}
-
-		u, err := s.services.User().Find(tokenClaims.UserID)
-		if err != nil {
-			s.error(w, r, http.StatusOK, err)
-			http.Redirect(w, r, "/api/v1/auth/login", http.StatusUnauthorized)
-			return
-		}
-
-		if u == nil {
-			fmt.Print("End point")
-		}
-
-		next.ServeHTTP(w, r.WithContext(context.WithValue(r.Context(), CtxKeyUser, u)))
-	})
-}
-*/
