@@ -116,14 +116,14 @@ func (s *AuthService) RegisterUser(ctx context.Context, user *models.User) error
 		return err
 	}
 
-	_, err := s.service.User().FindByEmail(user.Email)
+	_, err := s.service.User().FindByEmail(ctx, user.Email)
 	if err != nil && err != service.ErrUserNotFound {
 		return err
 	} else if err != service.ErrUserNotFound {
 		return service.ErrEmailIsAlreadyOccupied
 	}
 
-	_, err = s.service.User().FindByLogin(user.Login)
+	_, err = s.service.User().FindByLogin(ctx, user.Login)
 	if err != nil && err != service.ErrUserNotFound {
 		return err
 	} else if err != service.ErrUserNotFound {
@@ -134,7 +134,7 @@ func (s *AuthService) RegisterUser(ctx context.Context, user *models.User) error
 		return err
 	}
 
-	err = s.service.store.User().Create(user)
+	err = s.service.store.User().Create(ctx, user)
 	if err != nil {
 		return err
 	}
@@ -147,7 +147,7 @@ func (s *AuthService) UserSignIn(ctx context.Context, userSignIn *models.UserSig
 	var err error
 
 	if userSignIn.Login != "" && userSignIn.Email == "" {
-		user, err = s.service.store.User().FindByLogin(userSignIn.Login)
+		user, err = s.service.store.User().FindByLogin(ctx, userSignIn.Login)
 		if err == store.ErrRecordNotFound {
 			return nil, service.ErrIncorrectLoginOrPassword
 		} else if err != nil {
@@ -155,7 +155,7 @@ func (s *AuthService) UserSignIn(ctx context.Context, userSignIn *models.UserSig
 		}
 	} else if userSignIn.Email != "" && userSignIn.Login == "" {
 
-		user, err = s.service.store.User().FindByEmail(userSignIn.Email)
+		user, err = s.service.store.User().FindByEmail(ctx, userSignIn.Email)
 		if err == store.ErrRecordNotFound {
 			return nil, service.ErrIncorrectLoginOrPassword
 		} else if err != nil {
@@ -228,7 +228,7 @@ func (s *AuthService) AuthenticateUser(ctx context.Context, accessToken string) 
 		return nil, service.ErrAccessTokenIsBlacklisted
 	}
 
-	u, err := s.service.User().Find(tokenClaims.UserID)
+	u, err := s.service.User().Find(ctx, tokenClaims.UserID)
 	if err != nil {
 		return nil, err
 	}
@@ -270,7 +270,7 @@ func (s *AuthService) RefreshPairAccessRefreshToken(ctx context.Context, userID 
 	}
 
 	// Получить пользователя для генерации нового токена
-	user, err := s.service.store.User().Find(userID)
+	user, err := s.service.store.User().Find(ctx, userID)
 	if err != nil {
 		return nil, err
 	}

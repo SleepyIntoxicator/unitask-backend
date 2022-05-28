@@ -32,7 +32,7 @@ func (s *server) handleUsers() http.HandlerFunc {
 			return
 		}
 
-		users, err := s.services.User().GetAllUsers(limit, offset)
+		users, err := s.services.User().GetAllUsers(r.Context(), limit, offset)
 		if err != nil {
 			s.error(w, r, http.StatusInternalServerError, err)
 			return
@@ -52,7 +52,7 @@ func (s *server) handleUser() http.HandlerFunc {
 		URLVars := mux.Vars(r)
 		userID, err := strconv.Atoi(URLVars["id"])
 
-		user, err := s.services.User().Find(userID)
+		user, err := s.services.User().Find(r.Context(), userID)
 		if err != nil && err == service.ErrUserNotFound {
 			s.error(w, r, http.StatusBadRequest, err)
 			return

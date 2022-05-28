@@ -28,21 +28,21 @@ type AuthRepository interface {
 }
 
 type UserRepository interface {
-	Create(*models.User) error
-	GetAll(limit, offset int) ([]models.User, error)
-	Find(int) (*models.User, error)
-	FindByLogin(string) (*models.User, error)
+	Create(ctx context.Context, user *models.User) error
+	GetAll(ctx context.Context, limit, offset int) ([]models.User, error)
+	Find(ctx context.Context, userId int) (*models.User, error)
+	FindByLogin(ctx context.Context, login string) (*models.User, error)
 
 	// FindByEmail returns store.ErrRecordNotFound if db driver returned sql.ErrNoRows
 	//or another error if unknown one occurred.
-	FindByEmail(string) (*models.User, error)
+	FindByEmail(ctx context.Context, email string) (*models.User, error)
 
 	// CreateTester create user for testing
 	CreateTester() (*models.User, error)
 
-	IsUserExist(userID int) (bool, error)
-	GetUserRoles(userID int) ([]models.Role, error)
-	GetUserToken(userID int) (*models.UserToken, error)
+	IsUserExist(ctx context.Context, userID int) (bool, error)
+	GetUserRoles(ctx context.Context, userID int) ([]models.Role, error)
+	GetUserToken(ctx context.Context, userID int) (*models.UserToken, error)
 
 	/*FindByFullName(string) (*models.User, error)*/
 }

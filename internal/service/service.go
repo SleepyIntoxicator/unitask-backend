@@ -64,25 +64,25 @@ type AuthService interface {
 }
 
 type UserService interface {
-	Create(*models.User) error
-	GetAllUsers(limit, offset int) ([]models.User, error)
+	Create(ctx context.Context, user *models.User) error
+	GetAllUsers(ctx context.Context, limit, offset int) ([]models.User, error)
 
 	// Find returns *models.User by userID or nil if user not found.
 	//	If user was not found, method returns service.ErrUserNotFound.
 	//	If an error occurs during the execution of the method, the method returns error.
-	Find(userID int) (*models.User, error)
+	Find(ctx context.Context, userID int) (*models.User, error)
 
 	IsUserExist(ctx context.Context, userID int) (bool, error)
 
 	// FindByEmail returns service.ErrUserNotFound if user doesn't exist,
 	//returns service.ErrInvalidUserEmail if email is ""
 	//or another one if unknown error occurred
-	FindByEmail(string) (*models.User, error)
+	FindByEmail(ctx context.Context, email string) (*models.User, error)
 
 	// FindByLogin returns service.ErrUserNotFound if user doesn't exist,
 	//returns service.ErrInvalidUserEmail if login is ""
 	//or another one if unknown error occurred
-	FindByLogin(login string) (*models.User, error)
+	FindByLogin(ctx context.Context, login string) (*models.User, error)
 }
 
 type TaskService interface {
