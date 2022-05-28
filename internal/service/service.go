@@ -106,29 +106,29 @@ type UniversityService interface {
 }
 
 type GroupService interface {
-	Create(group *models.Group, user *models.User) error
-	GetAllGroups(limit, offset int) ([]models.Group, error)
+	Create(ctx context.Context, group *models.Group, user *models.User) error
+	GetAllGroups(ctx context.Context, limit, offset int) ([]models.Group, error)
 
 	// Find returns *models.Group by groupID or nil if group not found.
 	//	If group was not found, method returns service.ErrGroupNotFound.
 	//	If an error occurs during the execution of the method, the method returns error.
-	Find(groupID int) (*models.Group, error)
+	Find(ctx context.Context, groupID int) (*models.Group, error)
 
 	// FindByName returns *models.Group by name or nil if group not found.
 	//	If group was not found, method returns service.ErrGroupNotFound.
 	//	If an error occurs during the execution of the method, the method returns error.
-	FindByName(name string) (*models.Group, error)
-	Update(groupID int, ud *models.UpdateGroup) error
-	Delete(groupID int, userID int) error
+	FindByName(ctx context.Context, name string) (*models.Group, error)
+	Update(ctx context.Context, groupID int, ud *models.UpdateGroup) error
+	Delete(ctx context.Context, groupID int, userID int) error
 
-	GetGroupMembers(groupID int) ([]models.User, error)
-	GetGroupsUserMemberOf(userID int) ([]models.Group, error)
-	IsUserGroupMember(userID, groupID int) (bool, error)
-	GetUserPermissions(userID, groupID int) error
+	GetGroupMembers(ctx context.Context, groupID int) ([]models.User, error)
+	GetGroupsUserMemberOf(ctx context.Context, userID int) ([]models.Group, error)
+	IsUserGroupMember(ctx context.Context, userID, groupID int) (bool, error)
+	GetUserPermissions(ctx context.Context, userID, groupID int) error
 
-	AddUserToGroupByInvite(userID int, invite string) error
-	GetInviteLink(groupID int) (*models.GroupInvite, error)
-	GetOrCreateInviteLink(groupID int, inviterID int) (*models.GroupInvite, error)
+	AddUserToGroupByInvite(ctx context.Context, userID int, invite string) error
+	GetInviteLink(ctx context.Context, groupID int) (*models.GroupInvite, error)
+	GetOrCreateInviteLink(ctx context.Context, groupID int, inviterID int) (*models.GroupInvite, error)
 }
 
 type SubjectService interface {

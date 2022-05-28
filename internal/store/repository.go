@@ -53,32 +53,32 @@ type UniversityRepository interface {
 }
 
 type GroupRepository interface {
-	Create(*models.Group) error
-	GetAllGroups(limit, offset int) ([]models.Group, error)
-	Find(int) (*models.Group, error)
-	FindByName(string) (*models.Group, error)
-	Update(int, *models.UpdateGroup) error
-	Delete(int) error
+	Create(ctx context.Context, group *models.Group) error
+	GetAllGroups(ctx context.Context, limit, offset int) ([]models.Group, error)
+	Find(ctx context.Context, id int) (*models.Group, error)
+	FindByName(ctx context.Context, name string) (*models.Group, error)
+	Update(ctx context.Context, groupID int, up *models.UpdateGroup) error
+	Delete(ctx context.Context, id int) error
 
-	IsGroupExist(groupID int) (bool, error)
+	IsGroupExist(ctx context.Context, groupID int) (bool, error)
 
-	AddGroupMember(userID, groupID int, inviterID int) error
+	AddGroupMember(ctx context.Context, userID, groupID int, inviterID int) error
 
-	IsUserGroupMember(userID, groupID int) (bool, error)
-	GetGroupsUserMemberOf(userID int) ([]models.Group, error) //Get IDs of groups that this user is a member of
-	GetGroupMembers(groupID int) ([]models.User, error)
-	GetMembersCount(groupID int) (int, error)
-	GetMemberRoles(userID, groupID int) ([]models.Role, error) //Get the roles that this user have
-	GetRolePermissions(roleID int) ([]models.Permission, error)
+	IsUserGroupMember(ctx context.Context, userID, groupID int) (bool, error)
+	GetGroupsUserMemberOf(ctx context.Context, userID int) ([]models.Group, error) //Get IDs of groups that this user is a member of
+	GetGroupMembers(ctx context.Context, groupID int) ([]models.User, error)
+	GetMembersCount(ctx context.Context, groupID int) (int, error)
+	GetMemberRoles(ctx context.Context, userID, groupID int) ([]models.Role, error) //Get the roles that this user have
+	GetRolePermissions(ctx context.Context, roleID int) ([]models.Permission, error)
 
-	GetRole(roleID int) (*models.Role, error)
-	GetRoleByName(roleName string) (*models.Role, error)
+	GetRole(ctx context.Context, roleID int) (*models.Role, error)
+	GetRoleByName(ctx context.Context, roleName string) (*models.Role, error)
 
-	GetGroupInvite(groupID int) (*models.GroupInvite, error)
-	GetGroupInviteByHash(inviteHash string) (*models.GroupInvite, error)
-	AddGroupInviteHash(invite *models.GroupInvite) error
-	DeleteGroupInvites(groupID int) error
-	DeleteGroupInviteByHash(hash string) error
+	GetGroupInvite(ctx context.Context, groupID int) (*models.GroupInvite, error)
+	GetGroupInviteByHash(ctx context.Context, inviteHash string) (*models.GroupInvite, error)
+	AddGroupInviteHash(ctx context.Context, invite *models.GroupInvite) error
+	DeleteGroupInvites(ctx context.Context, groupID int) error
+	DeleteGroupInviteByHash(ctx context.Context, hash string) error
 }
 
 type SubjectRepository interface {

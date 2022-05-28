@@ -23,7 +23,7 @@ func (s *server) handleGroups() http.HandlerFunc {
 			return
 		}
 
-		groups, err := s.services.Group().GetAllGroups(limit, offset)
+		groups, err := s.services.Group().GetAllGroups(r.Context(), limit, offset)
 		if err != nil {
 			s.error(w, r, http.StatusInternalServerError, err)
 			return
@@ -60,7 +60,7 @@ func (s *server) handleGroup() http.HandlerFunc {
 			return
 		}
 
-		group, err := s.services.Group().Find(groupID)
+		group, err := s.services.Group().Find(r.Context(), groupID)
 		if err != nil {
 			s.error(w, r, http.StatusBadRequest, err)
 			return
@@ -117,7 +117,7 @@ func (s *server) handleGroupCreate() http.HandlerFunc {
 			GroupNumber:        req.GroupNumber,
 		}
 
-		err = s.services.Group().Create(group, creator)
+		err = s.services.Group().Create(r.Context(), group, creator)
 		if err != nil {
 			s.error(w, r, http.StatusOK, err)
 			return
@@ -139,7 +139,7 @@ func (s *server) handleGroupDelete() http.HandlerFunc {
 			return
 		}
 
-		err = s.services.Group().Delete(groupID, user.ID)
+		err = s.services.Group().Delete(r.Context(), groupID, user.ID)
 		if err == service.ErrUserIsNotGroupMember {
 			s.error(w, r, http.StatusForbidden, err)
 			return
@@ -180,13 +180,13 @@ func (s *server) handleGroupCreateInvitation() http.HandlerFunc {
 			s.error(w, r, http.StatusInternalServerError, err)
 			return
 		}
-		invite, err := s.services.Group().GetOrCreateInviteLink(groupID, inviterID.ID)
+		invite, err := s.services.Group().GetOrCreateInviteLink(r.Context(), groupID, inviterID.ID)
 		if err != nil {
 			s.errorV2(w, r, 500, models.New(err, 500, "invalid_group_id?"))
 			return
 		}
 
-		group, err := s.services.Group().Find(groupID)
+		group, err := s.services.Group().Find(r.Context(), groupID)
 		if err != nil {
 			s.error(w, r, http.StatusInternalServerError, err)
 			return
@@ -226,7 +226,7 @@ func (s *server) handleJoinToGroupWithInvite() http.HandlerFunc {
 			return
 		}
 
-		err = s.services.Group().AddUserToGroupByInvite(user.ID, invite)
+		err = s.services.Group().AddUserToGroupByInvite(r.Context(), user.ID, invite)
 		if err != nil {
 			s.error(w, r, http.StatusInternalServerError, err)
 			return
@@ -250,7 +250,7 @@ func (s *server) handleGroupWhereUserIsMember() http.HandlerFunc {
 		}
 
 		res := response{}
-		groups, err := s.services.Group().GetGroupsUserMemberOf(user.ID)
+		groups, err := s.services.Group().GetGroupsUserMemberOf(r.Context(), user.ID)
 		if err == service.ErrUserNotMemberOfAnyGroups {
 
 		} else if err != nil {
@@ -278,7 +278,7 @@ func (s *server) handleGetGroupMembers() http.HandlerFunc {
 			return
 		}
 
-		members, err := s.services.Group().GetGroupMembers(groupID)
+		members, err := s.services.Group().GetGroupMembers(r.Context(), groupID)
 		if err != nil && err != service.ErrGroupHaveNoMembers {
 			s.error(w, r, http.StatusInternalServerError, err)
 			return
