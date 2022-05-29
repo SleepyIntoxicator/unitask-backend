@@ -3,6 +3,7 @@ package sqlstore
 import (
 	"backend/internal/api/v1/models"
 	"backend/internal/store"
+	"context"
 	"errors"
 	"fmt"
 	"github.com/jackc/pgconn"
@@ -15,23 +16,23 @@ type GroupRepository struct {
 	store *Store
 }
 
-func (r *GroupRepository) Create(g *models.Group) error {
+func (r *GroupRepository) Create(ctx context.Context, group *models.Group) error {
 	query := `INSERT INTO public.group (custom_name, university_id, specialization_name, start_year, course_number, group_number, created_at) 
 		VALUES ($1, $2, $3, $4, $5, $6, $7) RETURNING id, created_at`
 
-	err := r.store.db.QueryRow(query,
-		g.CustomName,
-		g.UniversityID,
-		g.SpecializationName,
-		g.StartYear,
-		g.CourseNumber,
-		g.GroupNumber,
-		time.Now()).Scan(&g.ID, &g.CreatedAt)
-	g.CompileFullGroupNameAndCompareCustom()
+	err := r.store.db.QueryRowContext(ctx, query,
+		group.CustomName,
+		group.UniversityID,
+		group.SpecializationName,
+		group.StartYear,
+		group.CourseNumber,
+		group.GroupNumber,
+		time.Now()).Scan(&group.ID, &group.CreatedAt)
+	group.CompileFullGroupNameAndCompareCustom()
 	return err
 }
 
-func (r *GroupRepository) GetAllGroups(limit, offset int) ([]models.Group, error) {
+func (r *GroupRepository) GetAllGroups(ctx context.Context, limit, offset int) ([]models.Group, error) {
 	var groups []models.Group
 
 	query := `SELECT * FROM public.group ORDER BY id`
@@ -40,7 +41,7 @@ func (r *GroupRepository) GetAllGroups(limit, offset int) ([]models.Group, error
 		return nil, err
 	}
 
-	err = r.store.db.Select(&groups, query)
+	err = r.store.db.SelectContext(ctx, &groups, query)
 	if err != nil {
 		return nil, store.HandleErrorNoRows(err)
 	}
@@ -52,10 +53,10 @@ func (r *GroupRepository) GetAllGroups(limit, offset int) ([]models.Group, error
 	return groups, nil
 }
 
-func (r *GroupRepository) Find(id int) (*models.Group, error) {
+func (r *GroupRepository) Find(ctx context.Context, id int) (*models.Group, error) {
 	g := &models.Group{}
 	query := `SELECT id, custom_name, university_id, specialization_name, start_year, course_number, group_number, created_at FROM public.group where id = $1`
-	err := r.store.db.QueryRow(query, id).Scan(
+	err := r.store.db.QueryRowContext(ctx, query, id).Scan(
 		&g.ID,
 		&g.CustomName,
 		&g.UniversityID,
@@ -68,10 +69,10 @@ func (r *GroupRepository) Find(id int) (*models.Group, error) {
 	return g, store.HandleErrorNoRows(err)
 }
 
-func (r *GroupRepository) FindByName(name string) (*models.Group, error) {
+func (r *GroupRepository) FindByName(ctx context.Context, name string) (*models.Group, error) {
 	g := &models.Group{}
 	query := `SELECT id, custom_name, university_id, specialization_name, start_year, course_number, group_number, created_at  FROM public.group WHERE custom_name = $1`
-	err := r.store.db.QueryRow(query, name).Scan(
+	err := r.store.db.QueryRowContext(ctx, query, name).Scan(
 		&g.ID,
 		&g.CustomName,
 		&g.UniversityID,
@@ -84,7 +85,7 @@ func (r *GroupRepository) FindByName(name string) (*models.Group, error) {
 	return g, store.HandleErrorNoRows(err)
 }
 
-func (r *GroupRepository) Update(groupID int, up *models.UpdateGroup) error {
+func (r *GroupRepository) Update(ctx context.Context, groupID int, up *models.UpdateGroup) error {
 	setValues := make([]string, 0)
 	args := make([]interface{}, 0)
 	argID := 1
@@ -112,21 +113,24 @@ func (r *GroupRepository) Update(groupID int, up *models.UpdateGroup) error {
 	logrus.Debugf("updateQuery: %s", query)
 	logrus.Debugf("args: %s", args)
 
-	_, err := r.store.db.Exec(query, args...)
+	_, err := r.store.db.ExecContext(ctx, query, args...)
 	return err
 }
 
-func (r *GroupRepository) Delete(id int) (err error) {
+func (r *GroupRepository) Delete(ctx context.Context, id int) (err error) {
 	tx := r.store.db.MustBegin()
 
 	defer func() {
 		if recoverErr := recover(); recoverErr != nil {
 			netErr := recoverErr.(*pgconn.PgError)
 			err = netErr
+
 			logrus.WithFields(logrus.Fields{
 				"error": netErr.Error(),
 			}).Info("PostgreSQL recover from panic")
+
 			rollbackErr := tx.Rollback()
+
 			if rollbackErr != nil {
 				logrus.WithFields(logrus.Fields{
 					"error": rollbackErr,
@@ -135,25 +139,25 @@ func (r *GroupRepository) Delete(id int) (err error) {
 		}
 	}()
 
-	tx.MustExec(`DELETE FROM taskongroup WHERE group_id = $1`, id)
+	tx.MustExecContext(ctx, `DELETE FROM taskongroup WHERE group_id = $1`, id)
 
-	tx.MustExec(`DELETE FROM groupmemberroles WHERE group_member_id IN
+	tx.MustExecContext(ctx, `DELETE FROM groupmemberroles WHERE group_member_id IN
                                    (SELECT id FROM groupmember WHERE group_id = $1)`, id)
 
-	tx.MustExec(`DELETE FROM groupmember WHERE group_id = $1`, id)
+	tx.MustExecContext(ctx, `DELETE FROM groupmember WHERE group_id = $1`, id)
 
-	tx.MustExec(`DELETE FROM groupinvitehashes WHERE group_id = $1`, id)
+	tx.MustExecContext(ctx, `DELETE FROM groupinvitehashes WHERE group_id = $1`, id)
 
-	tx.MustExec(`DELETE FROM "group" WHERE id = $1`, id)
+	tx.MustExecContext(ctx, `DELETE FROM "group" WHERE id = $1`, id)
 
 	err = tx.Commit()
 
 	return store.HandleIgnoreErrorNoRows(err)
 }
 
-func (r *GroupRepository) IsGroupExist(groupID int) (bool, error) {
+func (r *GroupRepository) IsGroupExist(ctx context.Context, groupID int) (bool, error) {
 	query := `SELECT FROM public.group WHERE id = $1`
-	err := r.store.db.QueryRow(query, groupID).Err()
+	err := r.store.db.QueryRowContext(ctx, query, groupID).Err()
 
 	return store.HandleIsFieldFounded(err)
 }
@@ -161,9 +165,9 @@ func (r *GroupRepository) IsGroupExist(groupID int) (bool, error) {
 // AddGroupMember returns an error if it occurred.
 // Returns the store.ErrUserNotFound if the user doesn't exist
 // Returns the store.ErrGroupNotFound if the group doesn't exist
-func (r *GroupRepository) AddGroupMember(userID, groupID int, inviterID int) error {
+func (r *GroupRepository) AddGroupMember(ctx context.Context, userID, groupID int, inviterID int) error {
 
-	isMember, err := r.IsUserGroupMember(userID, groupID)
+	isMember, err := r.IsUserGroupMember(ctx, userID, groupID)
 	if err != nil {
 		return err
 	}
@@ -174,10 +178,10 @@ func (r *GroupRepository) AddGroupMember(userID, groupID int, inviterID int) err
 	var query string
 	if inviterID != 0 {
 		query = `INSERT INTO groupmember (user_id, group_id, invited_by_id) VALUES ($1, $2, $3)`
-		_, err = r.store.db.Exec(query, userID, groupID, inviterID)
+		_, err = r.store.db.ExecContext(ctx, query, userID, groupID, inviterID)
 	} else {
 		query = `INSERT INTO groupmember (user_id, group_id) VALUES ($1, $2)`
-		_, err = r.store.db.Exec(query, userID, groupID)
+		_, err = r.store.db.ExecContext(ctx, query, userID, groupID)
 	}
 	if err != nil {
 		return err
@@ -186,53 +190,53 @@ func (r *GroupRepository) AddGroupMember(userID, groupID int, inviterID int) err
 	return nil
 }
 
-func (r *GroupRepository) IsUserGroupMember(userID, groupID int) (bool, error) {
+func (r *GroupRepository) IsUserGroupMember(ctx context.Context, userID, groupID int) (bool, error) {
 	query := `SELECT FROM groupmember WHERE user_id = $1 AND group_id = $2`
-	err := r.store.db.QueryRow(query, userID, groupID).Scan()
+	err := r.store.db.QueryRowContext(ctx, query, userID, groupID).Scan()
 
 	return store.HandleIsFieldFounded(err)
 }
 
-func (r *GroupRepository) GetGroupMembers(groupID int) ([]models.User, error) {
-	var users []models.User
-	query := `SELECT * FROM public.user WHERE id IN 
-                                (SELECT user_id FROM groupmember WHERE group_id = $1) ORDER BY id`
-	err := r.store.db.Select(&users, query, groupID)
-
-	return users, store.HandleErrorNoRows(err)
-}
-
-func (r *GroupRepository) GetMembersCount(groupID int) (int, error) {
-	var countMembers int
-
-	query := `SELECT count(*) FROM groupmember WHERE group_id = $1`
-	err := r.store.db.QueryRow(query, groupID).Scan(&countMembers)
-	if err != nil {
-		return 0, store.HandleErrorNoRows(err)
-	}
-	return countMembers, nil
-}
-
-func (r *GroupRepository) GetGroupsUserMemberOf(userID int) ([]models.Group, error) {
+func (r *GroupRepository) GetGroupsUserMemberOf(ctx context.Context, userID int) ([]models.Group, error) {
 	var groups []models.Group
 
 	query := `SELECT id, custom_name, university_id, specialization_name, start_year, course_number, group_number, created_at FROM "group" WHERE id IN 
                           (SELECT group_id FROM groupmember WHERE user_id = $1) ORDER BY id`
-	err := r.store.db.Select(&groups, query, userID)
+	err := r.store.db.SelectContext(ctx, &groups, query, userID)
 	for i := range groups {
 		groups[i].CompileFullGroupNameAndCompareCustom()
 	}
 	return groups, store.HandleErrorNoRows(err)
 }
 
-func (r *GroupRepository) GetMemberRoles(userID, groupID int) ([]models.Role, error) {
+func (r *GroupRepository) GetGroupMembers(ctx context.Context, groupID int) ([]models.User, error) {
+	var users []models.User
+	query := `SELECT * FROM public.user WHERE id IN 
+                                (SELECT user_id FROM groupmember WHERE group_id = $1) ORDER BY id`
+	err := r.store.db.SelectContext(ctx, &users, query, groupID)
+
+	return users, store.HandleErrorNoRows(err)
+}
+
+func (r *GroupRepository) GetMembersCount(ctx context.Context, groupID int) (int, error) {
+	var countMembers int
+
+	query := `SELECT count(*) FROM groupmember WHERE group_id = $1`
+	err := r.store.db.QueryRowContext(ctx, query, groupID).Scan(&countMembers)
+	if err != nil {
+		return 0, store.HandleErrorNoRows(err)
+	}
+	return countMembers, nil
+}
+
+func (r *GroupRepository) GetMemberRoles(ctx context.Context, userID, groupID int) ([]models.Role, error) {
 	var roles []models.Role
 
 	query := `SELECT id, name, description FROM public.role 
 				WHERE id in (SELECT role_id FROM groupmemberroles 
 				      WHERE group_member_id = (SELECT id FROM groupmember 
 				          WHERE user_id = $1 AND group_id = $2))`
-	rows, err := r.store.db.Query(query, userID, groupID)
+	rows, err := r.store.db.QueryContext(ctx, query, userID, groupID)
 	if err != nil {
 		return roles, store.HandleErrorNoRows(err)
 	}
@@ -250,39 +254,39 @@ func (r *GroupRepository) GetMemberRoles(userID, groupID int) ([]models.Role, er
 	return roles, nil
 }
 
-func (r *GroupRepository) GetRolePermissions(roleID int) ([]models.Permission, error) {
+func (r *GroupRepository) GetRolePermissions(ctx context.Context, roleID int) ([]models.Permission, error) {
 	var permissions []models.Permission
 	query := `SELECT id, name FROM permission 
 				WHERE id in ( SELECT permission_id FROM rolepermissions WHERE role_id = $1) ORDER BY id`
-	err := r.store.db.Select(permissions, query, roleID)
+	err := r.store.db.SelectContext(ctx, permissions, query, roleID)
 
 	return permissions, store.HandleErrorNoRows(err)
 }
 
-func (r *GroupRepository) GetRole(roleID int) (*models.Role, error) {
+func (r *GroupRepository) GetRole(ctx context.Context, roleID int) (*models.Role, error) {
 	role := &models.Role{}
 
 	query := `SELECT id, name, description FROM public.role WHERE id = $1`
-	err := r.store.db.Select(role, query, roleID)
+	err := r.store.db.SelectContext(ctx, role, query, roleID)
 
 	return role, store.HandleErrorNoRows(err)
 }
 
-func (r *GroupRepository) GetRoleByName(roleName string) (*models.Role, error) {
+func (r *GroupRepository) GetRoleByName(ctx context.Context, roleName string) (*models.Role, error) {
 	role := &models.Role{}
 
 	query := `SELECT id, name, description FROM public.role WHERE name = $1`
-	err := r.store.db.Select(role, query, roleName)
+	err := r.store.db.SelectContext(ctx, role, query, roleName)
 
 	return role, store.HandleErrorNoRows(err)
 }
 
-func (r *GroupRepository) GetGroupInvite(groupID int) (*models.GroupInvite, error) {
+func (r *GroupRepository) GetGroupInvite(ctx context.Context, groupID int) (*models.GroupInvite, error) {
 	invite := &models.GroupInvite{}
 
 	query := `SELECT group_id, inviter_id, hash, expires_at FROM groupinvitehashes
 				WHERE group_id = $1`
-	err := r.store.db.QueryRow(query, groupID).Scan(
+	err := r.store.db.QueryRowContext(ctx, query, groupID).Scan(
 		&invite.GroupID,
 		&invite.InviterID,
 		&invite.InviteHash,
@@ -290,12 +294,12 @@ func (r *GroupRepository) GetGroupInvite(groupID int) (*models.GroupInvite, erro
 	return invite, store.HandleErrorNoRows(err)
 }
 
-func (r *GroupRepository) GetGroupInviteByHash(inviteHash string) (*models.GroupInvite, error) {
+func (r *GroupRepository) GetGroupInviteByHash(ctx context.Context, inviteHash string) (*models.GroupInvite, error) {
 	invite := &models.GroupInvite{}
 
 	query := `SELECT group_id, inviter_id, hash, expires_at FROM groupinvitehashes
 				WHERE hash = $1`
-	err := r.store.db.QueryRow(query, inviteHash).Scan(
+	err := r.store.db.QueryRowContext(ctx, query, inviteHash).Scan(
 		&invite.GroupID,
 		&invite.InviterID,
 		&invite.InviteHash,
@@ -303,11 +307,11 @@ func (r *GroupRepository) GetGroupInviteByHash(inviteHash string) (*models.Group
 	return invite, store.HandleErrorNoRows(err)
 }
 
-func (r *GroupRepository) AddGroupInviteHash(invite *models.GroupInvite) error {
+func (r *GroupRepository) AddGroupInviteHash(ctx context.Context, invite *models.GroupInvite) error {
 	query := `INSERT INTO groupinvitehashes (group_id, inviter_id, hash, expires_at) VALUES
 				($1, $2, $3, $4)`
 
-	err := r.store.db.QueryRow(query,
+	err := r.store.db.QueryRowContext(ctx, query,
 		invite.GroupID,
 		invite.InviterID,
 		invite.InviteHash,
@@ -316,45 +320,14 @@ func (r *GroupRepository) AddGroupInviteHash(invite *models.GroupInvite) error {
 	return err
 }
 
-func (r *GroupRepository) DeleteGroupInvites(groupID int) error {
+func (r *GroupRepository) DeleteGroupInvites(ctx context.Context, groupID int) error {
 	query := `DELETE FROM groupinvitehashes WHERE group_id = $1`
-	_, err := r.store.db.Exec(query, groupID)
+	_, err := r.store.db.ExecContext(ctx, query, groupID)
 	return err
 }
 
-func (r *GroupRepository) DeleteGroupInviteByHash(hash string) error {
+func (r *GroupRepository) DeleteGroupInviteByHash(ctx context.Context, hash string) error {
 	query := `DELETE FROM groupinvitehashes WHERE hash = $1`
-	_, err := r.store.db.Exec(query, hash)
+	_, err := r.store.db.ExecContext(ctx, query, hash)
 	return err
 }
-
-/*
-	FROM func (r *GroupRepository) Delete(id int) (err error)
-
-	query := `DELETE FROM taskongroup WHERE group_id = $1`
-	err := r.store.db.QueryRow(query, id).Err()
-	if err != nil {
-		return err
-	}
-
-	query = `DELETE FROM groupmemberroles WHERE group_member_id
-				IN (SELECT id FROM groupmember WHERE group_id = $1)`
-	err = r.store.db.QueryRow(query, id).Err()
-	if err != nil {
-		return err
-	}
-
-	query = `DELETE FROM groupmember WHERE group_id = $1`
-	err = r.store.db.QueryRow(query, id).Err()
-	if err != nil {
-		return err
-	}
-
-	query = `DELETE FROM groupinvitehashes WHERE group_id = $1`
-	err = r.store.db.QueryRow(query, id).Err()
-	if err != nil {
-		return err
-	}
-
-	query = `DELETE FROM "group" WHERE id = $1`
-	err = r.store.db.QueryRow(query, id).Scan()*/

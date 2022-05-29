@@ -2,8 +2,9 @@ package services
 
 import (
 	"backend/internal/api/v1/models"
+	cfg "backend/internal/config"
 	"backend/internal/store/sqlstore"
-	cfg "backend/pkg/config"
+	"context"
 	"fmt"
 	"github.com/dgrijalva/jwt-go"
 	"github.com/google/uuid"
@@ -17,12 +18,14 @@ func TestAuthService_RegisterUser(t *testing.T) {
 	defer teardown("user")
 
 	store := sqlstore.New(db)
-	config := cfg.NewConfig()
+	config := &cfg.Config{}
 	service := NewService(store, config)
 
 	userExample := models.TestUserForRegister(t)
 
-	err := service.Auth().RegisterUser(userExample)
+	ctx := context.Background()
+
+	err := service.Auth().RegisterUser(ctx, userExample)
 	assert.NoError(t, err)
 	assert.NotNil(t, userExample)
 
@@ -34,7 +37,7 @@ func TestAuthService_RegisterMultipleUser(t *testing.T) {
 	defer teardown("user")
 
 	store := sqlstore.New(db)
-	config := cfg.NewConfig()
+	config := &cfg.Config{}
 	service := NewService(store, config)
 
 	usersExample := models.TestUsers(t)
@@ -44,7 +47,7 @@ func TestAuthService_RegisterMultipleUser(t *testing.T) {
 		assert.NoError(t, err)
 		assert.NotNil(t, usersExample[i])
 
-		err = service.Auth().RegisterUser(&usersExample[i])
+		err = service.Auth().RegisterUser(context.Background(), &usersExample[i])
 		assert.NoError(t, err)
 		assert.NotNil(t, usersExample[i])
 
@@ -87,7 +90,7 @@ func TestAuthService_GetToken(t *testing.T) {
 	//var letters = []rune("abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ1234567890")
 	letters := []rune("abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ1234567890!\"#$%&'()*+,-./:;<=>?@[\\]^_`{|}~")
 	for i := 0; i < 100; i++ {
-		fmt.Printf("%s\n", s.GetToken(64, letters))
+		fmt.Printf("%s\n", s.getToken(64, letters))
 		time.Sleep(time.Nanosecond * 10)
 	}
 }

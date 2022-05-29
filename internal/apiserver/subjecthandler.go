@@ -24,7 +24,7 @@ func (s *server) handleSubjectCreate() http.HandlerFunc {
 		subject := &models.Subject{
 			Name: req.SubjectName,
 		}
-		err = s.services.Subject().Create(subject)
+		err = s.services.Subject().Create(r.Context(), subject)
 		if err != nil {
 			s.error(w, r, http.StatusInternalServerError, err)
 			return
@@ -46,7 +46,7 @@ func (s *server) handleSubjects() http.HandlerFunc {
 			return
 		}
 
-		subjects, err := s.services.Subject().GetAllSubjects(limit, offset)
+		subjects, err := s.services.Subject().GetAllSubjects(r.Context(), limit, offset)
 		if err != nil {
 			s.error(w, r, http.StatusInternalServerError, err)
 			return
@@ -71,7 +71,7 @@ func (s *server) handleSubject() http.HandlerFunc {
 			return
 		}
 
-		subject, err := s.services.Subject().Find(subjectID)
+		subject, err := s.services.Subject().Find(r.Context(), subjectID)
 		if err != nil && err != service.ErrSubjectNotFound {
 			s.error(w, r, http.StatusInternalServerError, err)
 			return
@@ -99,7 +99,7 @@ func (s *server) handleDeleteSubject() http.HandlerFunc {
 			return
 		}
 
-		subject, err := s.services.Subject().Delete(subjectID)
+		subject, err := s.services.Subject().Delete(r.Context(), subjectID)
 		if err != nil {
 			s.error(w, r, http.StatusInternalServerError, err)
 			return

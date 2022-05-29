@@ -7,7 +7,7 @@ import (
 	"testing"
 )
 
-func TestDB(t *testing.T, databaseDriver, databaseURL string) (*sqlx.DB, func (...string)) {
+func TestDB(t *testing.T, databaseDriver, databaseURL string) (*sqlx.DB, func(...string)) {
 	t.Helper()
 
 	db, err := sqlx.Open(databaseDriver, databaseURL)
@@ -22,9 +22,7 @@ func TestDB(t *testing.T, databaseDriver, databaseURL string) (*sqlx.DB, func (.
 	return db, func(tables ...string) {
 		if len(tables) > 0 {
 			query := fmt.Sprintf("TRUNCATE public.%s CASCADE", strings.Join(tables, ", public."))
-			//if _, err := db.Exec(fmt.Sprintf("TRUNCATE public.%s CASCADE", strings.Join(tables, ", public.")));
-			if _, err := db.Exec(query);
-			err != nil {
+			if _, err := db.Exec(query); err != nil {
 				t.Fatal(err)
 			}
 			for _, table := range tables {

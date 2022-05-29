@@ -202,7 +202,7 @@ func (s *server) handleGetGroupTask() http.HandlerFunc {
 			return
 		}
 
-		isUserMember, err := s.services.Group().IsUserGroupMember(user.ID, groupID)
+		isUserMember, err := s.services.Group().IsUserGroupMember(r.Context(), user.ID, groupID)
 		if err != nil {
 			s.error(w, r, http.StatusInternalServerError, err)
 			return

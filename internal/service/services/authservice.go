@@ -4,10 +4,10 @@ import (
 	"backend/internal/api/v1/models"
 	"backend/internal/service"
 	"backend/internal/store"
+	"context"
 	"crypto/md5"
 	"crypto/sha1"
 	"encoding/hex"
-	"errors"
 	"github.com/dgrijalva/jwt-go"
 	"github.com/google/uuid"
 	"golang.org/x/crypto/bcrypt"
@@ -20,11 +20,7 @@ const (
 	refreshTokenLength = 64
 )
 
-var (
-	TokenTTL         = 12 * time.Hour      //Deprecated.
-	appTokenTTL      = 24 * time.Hour * 30 //Deprecated.
-	signingKeyLength = 64                  //Deprecated.
-
+const (
 	minimumAccessTokenRefreshRate = 5 * time.Second
 )
 
@@ -52,15 +48,11 @@ func NewAuthService(service *Service) *AuthService {
 	s.signingKey = service.config.Auth.JWT.SigningKey
 
 	s.tokenBlacklistMgr = New()
-	_ = service.store.Auth().ClearUserTokens()
+	_ = service.store.Auth().ClearUserTokens(context.Background())
 	return s
 }
 
-func (s *AuthService) GetSigningKey() string {
-	return s.signingKey
-}
-
-func (s *AuthService) RegisterApp(app *models.RegisteredApp) error {
+func (s *AuthService) RegisterApp(ctx context.Context, app *models.RegisteredApp) error {
 	_, err := s.service.store.Auth().GetAppByName(app.AppName)
 	if err != nil && err != store.ErrRecordNotFound {
 		return err
@@ -68,30 +60,30 @@ func (s *AuthService) RegisterApp(app *models.RegisteredApp) error {
 		return service.ErrAppNameIsAlreadyOccupied
 	}
 
-	uuid, err := uuid.NewUUID()
+	appUUID, err := uuid.NewUUID()
 	if err != nil {
 		return err
 	}
-	app.ID = uuid
+	app.ID = appUUID
 	letters := []rune("abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ1234567890")
-	app.AppSecret = s.GetToken(32, letters)
-	err = s.service.store.Auth().RegisterApp(app)
+	app.AppSecret = s.getToken(32, letters)
+	err = s.service.store.Auth().RegisterApp(ctx, app)
 
 	return err
 }
 
-func (s *AuthService) DeleteApp(appID, appSecret, appToken string) error {
+func (s *AuthService) DeleteApp(ctx context.Context, appID, appSecret, appToken string) error {
 	appUUID, err := uuid.Parse(appID)
 	if err != nil {
 		return service.ErrInvalidAppID
 	}
 
-	regApp, err := s.service.store.Auth().GetApp(appUUID)
+	regApp, err := s.service.store.Auth().GetApp(ctx, appUUID)
 	if err != nil {
 		return service.ErrAppNotFound
 	}
 
-	regAppToken, err := s.service.store.Auth().GetAppTokenByAppUUID(appUUID)
+	regAppToken, err := s.service.store.Auth().GetAppTokenByAppUUID(ctx, appUUID)
 	if err != nil {
 		return service.ErrAppAuthorization
 	}
@@ -100,12 +92,12 @@ func (s *AuthService) DeleteApp(appID, appSecret, appToken string) error {
 		return service.ErrAppAuthorization
 	}
 
-	err = s.service.store.Auth().RemoveAppTokens(appUUID)
+	err = s.service.store.Auth().RemoveAppTokens(ctx, appUUID)
 	if err != nil {
 		return err
 	}
 
-	err = s.service.store.Auth().DeleteApp(appUUID)
+	err = s.service.store.Auth().DeleteApp(ctx, appUUID)
 	if err != nil {
 		return err
 	}
@@ -115,19 +107,19 @@ func (s *AuthService) DeleteApp(appID, appSecret, appToken string) error {
 
 //RegisterUser Returns service.ErrEmailIsAlreadyOccupied or service.ErrLoginIsAlreadyOccupied
 //if a user with this login or email already exist
-func (s *AuthService) RegisterUser(user *models.User) error {
+func (s *AuthService) RegisterUser(ctx context.Context, user *models.User) error {
 	if err := user.Validate(); err != nil {
 		return err
 	}
 
-	_, err := s.service.User().FindByEmail(user.Email)
+	_, err := s.service.User().FindByEmail(ctx, user.Email)
 	if err != nil && err != service.ErrUserNotFound {
 		return err
 	} else if err != service.ErrUserNotFound {
 		return service.ErrEmailIsAlreadyOccupied
 	}
 
-	_, err = s.service.User().FindByLogin(user.Login)
+	_, err = s.service.User().FindByLogin(ctx, user.Login)
 	if err != nil && err != service.ErrUserNotFound {
 		return err
 	} else if err != service.ErrUserNotFound {
@@ -138,7 +130,7 @@ func (s *AuthService) RegisterUser(user *models.User) error {
 		return err
 	}
 
-	err = s.service.store.User().Create(user)
+	err = s.service.store.User().Create(ctx, user)
 	if err != nil {
 		return err
 	}
@@ -146,12 +138,12 @@ func (s *AuthService) RegisterUser(user *models.User) error {
 	return nil
 }
 
-func (s *AuthService) UserSignIn(userSignIn *models.UserSignIn) (*models.UserToken, error) {
+func (s *AuthService) UserSignIn(ctx context.Context, userSignIn *models.UserSignIn) (*models.UserToken, error) {
 	user := &models.User{}
 	var err error
 
 	if userSignIn.Login != "" && userSignIn.Email == "" {
-		user, err = s.service.store.User().FindByLogin(userSignIn.Login)
+		user, err = s.service.store.User().FindByLogin(ctx, userSignIn.Login)
 		if err == store.ErrRecordNotFound {
 			return nil, service.ErrIncorrectLoginOrPassword
 		} else if err != nil {
@@ -159,7 +151,7 @@ func (s *AuthService) UserSignIn(userSignIn *models.UserSignIn) (*models.UserTok
 		}
 	} else if userSignIn.Email != "" && userSignIn.Login == "" {
 
-		user, err = s.service.store.User().FindByEmail(userSignIn.Email)
+		user, err = s.service.store.User().FindByEmail(ctx, userSignIn.Email)
 		if err == store.ErrRecordNotFound {
 			return nil, service.ErrIncorrectLoginOrPassword
 		} else if err != nil {
@@ -185,28 +177,28 @@ func (s *AuthService) UserSignIn(userSignIn *models.UserSignIn) (*models.UserTok
 		UserID:              user.ID,
 	}
 
-	if err := s.service.store.Auth().AddUserToken(userToken); err != nil {
+	if err := s.service.store.Auth().AddUserToken(ctx, userToken); err != nil {
 		return nil, err
 	}
 
 	return userToken, nil
 }
 
-func (s *AuthService) UserLogout(userID int) error {
+func (s *AuthService) UserLogout(ctx context.Context, userID int) error {
 	//TODO Выходит сразу со всех устройств и приложений. Доработать
-	token, err := s.service.store.Auth().GetUserToken(userID)
+	token, err := s.service.store.Auth().GetUserToken(ctx, userID)
 	if err != nil {
 		return err
 	}
 
 	s.addAccessTokenToBlacklist(token.AccessToken, token.ExpirationTimestamp)
 
-	err = s.service.store.Auth().SetUserTokenInvalidByToken(token.AccessToken)
+	err = s.service.store.Auth().SetUserTokenInvalidByToken(ctx, token.AccessToken)
 	if err != nil {
 		return err
 	}
 
-	_, err = s.service.store.Auth().RemoveUserTokens(userID)
+	_, err = s.service.store.Auth().RemoveUserTokens(ctx, userID)
 	if err != nil {
 		return err
 	}
@@ -214,7 +206,11 @@ func (s *AuthService) UserLogout(userID int) error {
 	return nil
 }
 
-func (s *AuthService) AuthenticateUser(accessToken string) (*models.User, error) {
+func (s *AuthService) addAccessTokenToBlacklist(token string, expirationTimestamp time.Time) {
+	s.tokenBlacklistMgr.AddTokenToBlacklist(token, expirationTimestamp)
+}
+
+func (s *AuthService) AuthenticateUser(ctx context.Context, accessToken string) (*models.User, error) {
 	tokenClaims, err := s.CheckAccessToken(accessToken)
 	if err != nil {
 		return nil, err
@@ -228,7 +224,7 @@ func (s *AuthService) AuthenticateUser(accessToken string) (*models.User, error)
 		return nil, service.ErrAccessTokenIsBlacklisted
 	}
 
-	u, err := s.service.User().Find(tokenClaims.UserID)
+	u, err := s.service.User().Find(ctx, tokenClaims.UserID)
 	if err != nil {
 		return nil, err
 	}
@@ -237,9 +233,9 @@ func (s *AuthService) AuthenticateUser(accessToken string) (*models.User, error)
 
 }
 
-func (s *AuthService) RefreshPairAccessRefreshToken(userID int, accessToken, refreshToken string) (*models.UserToken, error) {
+func (s *AuthService) RefreshPairAccessRefreshToken(ctx context.Context, userID int, accessToken, refreshToken string) (*models.UserToken, error) {
 	// Проверить наличие и валидность refresh-токена
-	oldToken, err := s.CheckRefreshToken(refreshToken, userID)
+	oldToken, err := s.service.Auth().CheckRefreshToken(ctx, refreshToken, userID)
 	if err != nil {
 		return nil, err
 	}
@@ -265,12 +261,12 @@ func (s *AuthService) RefreshPairAccessRefreshToken(userID int, accessToken, ref
 	}
 
 	// Выдать время окончания жизни токена сейчас
-	if err := s.service.store.Auth().SetUserTokenInvalidByToken(oldToken.RefreshToken); err != nil {
+	if err := s.service.store.Auth().SetUserTokenInvalidByToken(ctx, oldToken.RefreshToken); err != nil {
 		return nil, err
 	}
 
 	// Получить пользователя для генерации нового токена
-	user, err := s.service.store.User().Find(userID)
+	user, err := s.service.store.User().Find(ctx, userID)
 	if err != nil {
 		return nil, err
 	}
@@ -282,33 +278,11 @@ func (s *AuthService) RefreshPairAccessRefreshToken(userID int, accessToken, ref
 	}
 
 	// Добавить новую пару токенов в бд
-	if err := s.service.store.Auth().AddUserToken(newToken); err != nil {
+	if err := s.service.store.Auth().AddUserToken(ctx, newToken); err != nil {
 		return nil, err
 	}
 
 	return newToken, nil
-}
-
-// GenerateJWTToken doesn't work correctly. Deprecated.
-func (s *AuthService) GenerateJWTToken(userID int) (*jwt.Token, error) {
-	user, err := s.service.User().Find(userID)
-	if err != nil {
-		return nil, err
-	}
-
-	t := jwt.NewWithClaims(jwt.SigningMethodES256, &tokenClaims{
-		jwt.StandardClaims{
-			IssuedAt:  time.Now().Unix(),
-			ExpiresAt: time.Now().Add(s.service.config.Auth.JWT.RefreshTokenTTL).Unix(),
-		},
-		user.ID,
-	})
-
-	return t, errors.New("to do me")
-}
-
-func (s *AuthService) RestoreJWTToken(userID int, refreshToken string) (*models.UserToken, error) {
-	panic("implement me")
 }
 
 func (s *AuthService) CheckAccessToken(accessToken string) (*models.UAccessTokenClaims, error) {
@@ -329,8 +303,8 @@ func (s *AuthService) CheckAccessToken(accessToken string) (*models.UAccessToken
 	return tokenClaims, err
 }
 
-func (s *AuthService) CheckRefreshToken(refreshToken string, userID int) (*models.UserToken, error) {
-	userToken, err := s.service.store.Auth().GetUserToken(userID)
+func (s *AuthService) CheckRefreshToken(ctx context.Context, refreshToken string, userID int) (*models.UserToken, error) {
+	userToken, err := s.service.store.Auth().GetUserToken(ctx, userID)
 	if err != nil && err != store.ErrRecordNotFound {
 		return nil, service.ErrInvalidUserToken
 	} else if err != nil {
@@ -350,13 +324,13 @@ func (s *AuthService) CheckRefreshToken(refreshToken string, userID int) (*model
 	return userToken, nil
 }
 
-func (s *AuthService) IsAppSecretValid(appID, appSecret string) (bool, error) {
+func (s *AuthService) IsAppSecretValid(ctx context.Context, appID, appSecret string) (bool, error) {
 	appUUID, err := uuid.Parse(appID)
 	if err != nil {
 		return false, service.ErrAppAuthorization
 	}
 
-	appData, err := s.service.store.Auth().GetApp(appUUID)
+	appData, err := s.service.store.Auth().GetApp(ctx, appUUID)
 	if err != nil {
 		if err == store.ErrNoRowsFound {
 			return false, service.ErrInvalidAppID
@@ -371,8 +345,8 @@ func (s *AuthService) IsAppSecretValid(appID, appSecret string) (bool, error) {
 	return true, nil
 }
 
-func (s *AuthService) IsAppTokenValid(appToken string) (bool, error) {
-	storeToken, err := s.service.store.Auth().GetAppTokenInfo(appToken)
+func (s *AuthService) IsAppTokenValid(ctx context.Context, appToken string) (bool, error) {
+	storeToken, err := s.service.store.Auth().GetAppTokenInfo(ctx, appToken)
 	if err == store.ErrRecordNotFound {
 		return false, service.ErrInvalidAppToken
 	} else if err != nil {
@@ -390,15 +364,15 @@ func (s *AuthService) IsAppTokenValid(appToken string) (bool, error) {
 	return true, nil
 }
 
-func (s *AuthService) GetAppToken(appID uuid.UUID) (*models.AppToken, error) {
-	token, err := s.service.store.Auth().GetAppTokenByAppUUID(appID)
+func (s *AuthService) GetAppToken(ctx context.Context, appID uuid.UUID) (*models.AppToken, error) {
+	token, err := s.service.store.Auth().GetAppTokenByAppUUID(ctx, appID)
 	//Если необработанная ошибка
 	if err != nil && err != store.ErrRecordNotFound {
 		return nil, err
 		//Если токен не существует
 	} else if err == store.ErrRecordNotFound || (err == nil && time.Now().After(token.ExpirationTimestamp)) {
 		//Генерируем новый
-		app, err := s.service.store.Auth().GetApp(appID)
+		app, err := s.service.store.Auth().GetApp(ctx, appID)
 		if err != nil {
 			return nil, err
 		}
@@ -417,12 +391,12 @@ func (s *AuthService) GetAppToken(appID uuid.UUID) (*models.AppToken, error) {
 		}
 
 		if time.Now().After(token.ExpirationTimestamp) {
-			err = s.service.store.Auth().RemoveAppTokens(token.AppID)
+			err = s.service.store.Auth().RemoveAppTokens(ctx, token.AppID)
 			if err != nil {
 				return nil, err
 			}
 		}
-		if err := s.service.store.Auth().AddAppToken(newAppToken); err != nil {
+		if err := s.service.store.Auth().AddAppToken(ctx, newAppToken); err != nil {
 			return nil, err
 		}
 
@@ -431,13 +405,13 @@ func (s *AuthService) GetAppToken(appID uuid.UUID) (*models.AppToken, error) {
 	return token, nil
 }
 
-func (s *AuthService) GetAppInfoByToken(token string) (*models.RegisteredApp, error) {
-	tokenInfo, err := s.GetTokenInfo(token)
+func (s *AuthService) GetAppInfoByAppToken(ctx context.Context, token string) (*models.RegisteredApp, error) {
+	tokenInfo, err := s.GetAppTokenInfo(ctx, token)
 	if err != nil {
 		return nil, err
 	}
 
-	app, err := s.service.store.Auth().GetApp(tokenInfo.AppID)
+	app, err := s.service.store.Auth().GetApp(ctx, tokenInfo.AppID)
 	if err == store.ErrRecordNotFound {
 		return nil, service.ErrInvalidAppID
 	} else if err != nil {
@@ -446,8 +420,10 @@ func (s *AuthService) GetAppInfoByToken(token string) (*models.RegisteredApp, er
 	return app, nil
 }
 
-func (s *AuthService) GetTokenInfo(token string) (*models.AppToken, error) {
-	tokenInfo, err := s.service.store.Auth().GetAppTokenInfo(token)
+// GetAppTokenInfo returns the app token from store
+func (s *AuthService) GetAppTokenInfo(ctx context.Context, token string) (*models.AppToken, error) {
+	// Load token from db
+	tokenInfo, err := s.service.store.Auth().GetAppTokenInfo(ctx, token)
 	if err == store.ErrRecordNotFound {
 		return nil, service.ErrInvalidAppToken
 	} else if err != nil {
@@ -455,10 +431,6 @@ func (s *AuthService) GetTokenInfo(token string) (*models.AppToken, error) {
 	}
 
 	return tokenInfo, nil
-}
-
-func (s *AuthService) addAccessTokenToBlacklist(token string, expirationTimestamp time.Time) {
-	s.tokenBlacklistMgr.AddTokenToBlacklist(token, expirationTimestamp)
 }
 
 func (s *AuthService) GenerateTokenPair(user *models.User) (*models.UserToken, error) {
@@ -515,18 +487,10 @@ func (s *AuthService) GenerateAccessToken(user *models.User, startTimestamp time
 // GenerateRefreshToken Generates the refresh token. Token is [a-zA-Z0-9]
 func (s *AuthService) GenerateRefreshToken() string {
 	var letters = []rune("abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ1234567890")
-	return s.GetToken(refreshTokenLength, letters)
+	return s.getToken(refreshTokenLength, letters)
 }
 
-// changeSigningKey. Deprecated.
-// Generates the signing key. Key is [a-zA-Z0-9!-}...].
-func (s *AuthService) changeSigningKey() string {
-	var letters = []rune("abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ1234567890!\"#$%&'()*+,-./:;<=>?@[\\]^_`{|}~")
-	s.signingKey = s.GetToken(signingKeyLength, letters)
-	return s.signingKey
-}
-
-func (s *AuthService) GetToken(n int, letters []rune) string {
+func (s *AuthService) getToken(n int, letters []rune) string {
 	rand.Seed(time.Now().UnixNano())
 
 	b := make([]rune, n)
@@ -535,7 +499,3 @@ func (s *AuthService) GetToken(n int, letters []rune) string {
 	}
 	return string(b)
 }
-
-//b := make([]byte, n)
-//rBytes := []byte(string(letters[rand.Intn(len(letters))]))
-//b[i] = rBytes[rand.Intn(len(rBytes))]
