@@ -50,7 +50,9 @@ func NewPostgresConnection(connData ConnectionData) (*sqlx.DB, error) {
 
 		time.Sleep(connectionTimeout)
 	}
-	if err != nil {
+	if errors.Is(err, ctx.Err()) {
+		return nil, errors.New("failed to connect to the database")
+	} else if err != nil {
 		return nil, err
 	}
 
