@@ -48,8 +48,8 @@ type UserRepository interface {
 }
 
 type UniversityRepository interface {
-	Create(university *models.University) error
-	Find(universityID int) (*models.University, error)
+	Create(ctx context.Context, university *models.University) error
+	Find(ctx context.Context, universityID int) (*models.University, error)
 }
 
 type GroupRepository interface {
@@ -82,10 +82,10 @@ type GroupRepository interface {
 }
 
 type SubjectRepository interface {
-	Create(*models.Subject) error
-	GetAll(limit, offset int) ([]models.Subject, error)
-	Find(int) (*models.Subject, error)
-	Delete(int) (*models.Subject, error)
+	Create(ctx context.Context, subject *models.Subject) error
+	GetAll(ctx context.Context, limit, offset int) ([]models.Subject, error)
+	Find(ctx context.Context, id int) (*models.Subject, error)
+	Delete(ctx context.Context, id int) (*models.Subject, error)
 }
 
 type TaskRepository interface {
