@@ -68,7 +68,7 @@ type Task struct {
 	Views        int       `json:"watches"`
 }
 
-func (s *server) GetFullInfoOfGroup(group models.Group) (FullGroupInfo, error) {
+func (s *server) GetFullInfoOfGroup(ctx context.Context, group models.Group) (FullGroupInfo, error) {
 	newGroupInfo := FullGroupInfo{}
 	newGroupInfo.Group = Group{
 		ID:           group.ID,
@@ -78,14 +78,14 @@ func (s *server) GetFullInfoOfGroup(group models.Group) (FullGroupInfo, error) {
 		CreatedAt:    group.CreatedAt,
 	}
 
-	university, err := s.services.University().Find(group.UniversityID)
+	university, err := s.services.University().Find(ctx, group.UniversityID)
 	if err != nil {
 		return newGroupInfo, err
 	}
 	newGroupInfo.Group.University = *university
 
 	//Adding members to response groups
-	members, err := s.services.Group().GetGroupMembers(group.ID)
+	members, err := s.services.Group().GetGroupMembers(ctx, group.ID)
 	if err != nil && err != service.ErrGroupHaveNoMembers {
 		return newGroupInfo, err
 	}
@@ -102,7 +102,7 @@ func (s *server) GetFullInfoOfGroup(group models.Group) (FullGroupInfo, error) {
 	}
 	newGroupInfo.GroupMembersCount = len(newGroupInfo.Members)
 
-	invite, err := s.services.Group().GetInviteLink(group.ID)
+	invite, err := s.services.Group().GetInviteLink(ctx, group.ID)
 	if err != nil && err != service.ErrGroupHaveNotInvitation {
 		return newGroupInfo, err
 	}
@@ -143,7 +143,7 @@ func (s *server) GetDetailOfTask(ctx context.Context, t models.Task) (Task, erro
 	}
 
 	for _, gID := range t.GroupsID {
-		gr, err := s.services.Group().Find(gID)
+		gr, err := s.services.Group().Find(ctx, gID)
 		if err != nil {
 			return Task{}, err
 		}
@@ -154,7 +154,7 @@ func (s *server) GetDetailOfTask(ctx context.Context, t models.Task) (Task, erro
 		newTask.Groups = append(newTask.Groups, newGroup)
 	}
 	for _, uID := range t.UsersID {
-		u, err := s.services.User().Find(uID)
+		u, err := s.services.User().Find(ctx, uID)
 		if err != nil {
 			return Task{}, err
 
@@ -166,7 +166,7 @@ func (s *server) GetDetailOfTask(ctx context.Context, t models.Task) (Task, erro
 		}
 		newTask.Users = append(newTask.Users, newUser)
 	}
-	sub, err := s.services.Subject().Find(t.SubjectID)
+	sub, err := s.services.Subject().Find(ctx, t.SubjectID)
 	if err != nil && err != service.ErrSubjectNotFound {
 		return Task{}, err
 
@@ -222,7 +222,7 @@ func (s *server) GetDetailOfTask(ctx context.Context, t models.Task) (Task, erro
 		newTask.NextTasks = append(newTask.NextTasks, newNextTask)
 	}
 
-	u, err := s.services.User().Find(t.AddedByID)
+	u, err := s.services.User().Find(ctx, t.AddedByID)
 	if err != nil {
 		return Task{}, err
 

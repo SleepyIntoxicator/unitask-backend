@@ -35,7 +35,7 @@ func (s *server) handleGroups() http.HandlerFunc {
 		res := &response{}
 
 		for _, gr := range groups {
-			newResponseGroup, err := s.GetFullInfoOfGroup(gr)
+			newResponseGroup, err := s.GetFullInfoOfGroup(r.Context(), gr)
 			if err != nil {
 				s.error(w, r, http.StatusInternalServerError, err)
 				return
@@ -66,7 +66,7 @@ func (s *server) handleGroup() http.HandlerFunc {
 			return
 		}
 
-		fullGroupInfo, err := s.GetFullInfoOfGroup(*group)
+		fullGroupInfo, err := s.GetFullInfoOfGroup(r.Context(), *group)
 		if err != nil {
 			s.error(w, r, http.StatusInternalServerError, err)
 			return
@@ -192,7 +192,7 @@ func (s *server) handleGroupCreateInvitation() http.HandlerFunc {
 			return
 		}
 
-		university, err := s.services.University().Find(group.UniversityID)
+		university, err := s.services.University().Find(r.Context(), group.UniversityID)
 		if err != nil {
 			s.error(w, r, http.StatusInternalServerError, err)
 			return
