@@ -89,33 +89,33 @@ type SubjectRepository interface {
 }
 
 type TaskRepository interface {
-	CreateGroupTask(*models.Task) error
-	CreateUserTask(*models.Task) error
-	GetAll(limit, offset int) ([]models.Task, error)
-	Find(int) (*models.Task, error)
+	CreateGroupTask(ctx context.Context, task *models.Task) error
+	CreateUserTask(ctx context.Context, task *models.Task) error
+	GetAll(ctx context.Context, limit, offset int) ([]models.Task, error)
+	Find(ctx context.Context, id int) (*models.Task, error)
 
-	Update(taskID int, updTask *models.UpdateTask) error
+	Update(ctx context.Context, taskID int, updTask *models.UpdateTask) error
+	DeleteTask(ctx context.Context, id int) error
 
-	AssignSubtask(taskID, subtaskID int) error
-	AssignTaskSequence(taskID, nextTaskID int) error
-	AssignTaskToGroup(taskID, groupID int) error
-	AssignTaskToUser(taskID, userID int) error
+	AssignSubtask(ctx context.Context, taskID, subtaskID int) error
+	AssignTaskSequence(ctx context.Context, taskID, nextTaskID int) error
+	AssignTaskToGroup(ctx context.Context, taskID, groupID int) error
+	AssignTaskToUser(ctx context.Context, taskID, userID int) error
 
-	FindPrevTasks(taskID int) ([]int, error)
-	FindNextTasks(taskID int) ([]int, error)
-	FindParentTask(taskID int) (int, error)
-	FindSubtasks(taskID int) ([]int, error)
+	FindNextTasks(ctx context.Context, taskID int) ([]int, error)
+	FindPrevTasks(ctx context.Context, taskID int) ([]int, error)
+	FindSubtasks(ctx context.Context, taskID int) ([]int, error)
+	FindParentTask(ctx context.Context, taskID int) (int, error)
 
-	FindTasksOnGroup(groupID int) ([]models.Task, error)
-	FindTasksOnUser(userID int) ([]models.Task, error)
-	FindUserLocalTasks(userID int) ([]models.Task, error)
-	FindGroupsOnTask(taskID int) ([]int, error)
-	FindUsersOnTask(taskID int) ([]int, error)
+	FindTasksOnGroup(ctx context.Context, groupID int) ([]models.Task, error)
+	FindTasksOnUser(ctx context.Context, userID int) ([]models.Task, error)
+	FindUserLocalTasks(ctx context.Context, userID int) ([]models.Task, error)
+	FindGroupsOnTask(ctx context.Context, taskID int) ([]int, error)
+	FindUsersOnTask(ctx context.Context, taskID int) ([]int, error)
 
-	RemoveGroupFromTask(taskID, groupID int) error
-	RemoveUserFromTask(taskID, userID int) error
+	RemoveGroupFromTask(ctx context.Context, taskID, groupID int) error
+	RemoveUserFromTask(ctx context.Context, taskID, userID int) error
 
-	DeleteTask(id int) error
 	//CreateSubtask(task *models.Task) error
 	//AddTaskStatusType(name string) (int, error)
 	//AddTaskStatus()

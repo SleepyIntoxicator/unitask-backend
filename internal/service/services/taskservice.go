@@ -17,7 +17,7 @@ func (s *TaskService) CreateGroupTask(ctx context.Context, task *models.Task) er
 		return err
 	}
 
-	err := s.service.store.Task().CreateGroupTask(task)
+	err := s.service.store.Task().CreateGroupTask(ctx, task)
 	if err != nil {
 		return err
 	}
@@ -30,7 +30,7 @@ func (s *TaskService) CreateUserTask(ctx context.Context, task *models.Task) err
 		return err
 	}
 
-	err := s.service.store.Task().CreateUserTask(task)
+	err := s.service.store.Task().CreateUserTask(ctx, task)
 	if err != nil {
 		return err
 	}
@@ -39,7 +39,7 @@ func (s *TaskService) CreateUserTask(ctx context.Context, task *models.Task) err
 }
 
 func (s *TaskService) Find(ctx context.Context, taskID int) (*models.Task, error) {
-	task, err := s.service.store.Task().Find(taskID)
+	task, err := s.service.store.Task().Find(ctx, taskID)
 	if err == store.ErrRecordNotFound {
 		return nil, service.ErrTaskNotFound
 	}
@@ -51,18 +51,18 @@ func (s *TaskService) Find(ctx context.Context, taskID int) (*models.Task, error
 //	Requires: The user must be a member of the group
 func (s *TaskService) GetTasksOfGroup(ctx context.Context, groupID, userID int) ([]models.Task, error) {
 	// Verifying that the user exists
-	isExist, err := s.service.store.User().IsUserExist(userID)
+	isExist, err := s.service.store.User().IsUserExist(ctx, userID)
 	if err != nil || !isExist {
 		return nil, err
 	}
 
 	// Verifying that the group exists
-	group, err := s.service.Group().Find(groupID)
+	group, err := s.service.Group().Find(ctx, groupID)
 	if err != nil {
 		return nil, err
 	}
 
-	isUserMemberOf, err := s.service.Group().IsUserGroupMember(userID, group.ID)
+	isUserMemberOf, err := s.service.Group().IsUserGroupMember(ctx, userID, group.ID)
 	if err != nil {
 		return nil, err
 	}
@@ -71,7 +71,7 @@ func (s *TaskService) GetTasksOfGroup(ctx context.Context, groupID, userID int) 
 		return nil, service.ErrUserIsNotGroupMember
 	}
 
-	tasks, err := s.service.store.Task().FindTasksOnGroup(groupID)
+	tasks, err := s.service.store.Task().FindTasksOnGroup(ctx, groupID)
 	if err != nil {
 		return nil, err
 	}
@@ -80,7 +80,7 @@ func (s *TaskService) GetTasksOfGroup(ctx context.Context, groupID, userID int) 
 }
 
 func (s *TaskService) GetTasksOfUser(ctx context.Context, userID int) ([]models.Task, error) {
-	tasks, err := s.service.store.Task().FindTasksOnUser(userID)
+	tasks, err := s.service.store.Task().FindTasksOnUser(ctx, userID)
 	if err != nil {
 		return nil, err
 	}
@@ -89,7 +89,7 @@ func (s *TaskService) GetTasksOfUser(ctx context.Context, userID int) ([]models.
 }
 
 func (s *TaskService) GetUserLocalTasks(ctx context.Context, userID int) ([]models.Task, error) {
-	tasks, err := s.service.store.Task().FindUserLocalTasks(userID)
+	tasks, err := s.service.store.Task().FindUserLocalTasks(ctx, userID)
 	if err != nil {
 		return nil, err
 	}
@@ -103,7 +103,7 @@ func (s *TaskService) GetGroupTaskWithContext(ctx context.Context, groupID, task
 		return nil, err
 	}
 
-	isUserMember, err := s.service.Group().IsUserGroupMember(user.ID, groupID)
+	isUserMember, err := s.service.Group().IsUserGroupMember(ctx, user.ID, groupID)
 	if err != nil {
 		return nil, err
 	}
@@ -130,19 +130,19 @@ func (s *TaskService) GetAllTasks(ctx context.Context, limit, offset int) ([]mod
 		return nil, service.ErrInvalidLimitOrPage
 	}
 
-	return s.service.store.Task().GetAll(limit, offset)
+	return s.service.store.Task().GetAll(ctx, limit, offset)
 }
 
 func (s *TaskService) GetAllUserTasks(ctx context.Context, userID, limit, offset int) ([]models.Task, error) {
 	var TasksAvailableToUser []models.Task
 
-	//Adding tasks assigned to groups that the user is member of
-	groupsUserMemberOf, err := s.service.Group().GetGroupsUserMemberOf(userID)
+	//Adding tasks assigned to the groups of which the user is a member
+	groupsUserMemberOf, err := s.service.Group().GetGroupsUserMemberOf(ctx, userID)
 	if err != nil {
 		return nil, err
 	}
 	for _, group := range groupsUserMemberOf {
-		tasksOfGroup, err := s.service.store.Task().FindTasksOnGroup(group.ID)
+		tasksOfGroup, err := s.service.store.Task().FindTasksOnGroup(ctx, group.ID)
 		if err != nil {
 			return nil, err
 		}
@@ -150,8 +150,8 @@ func (s *TaskService) GetAllUserTasks(ctx context.Context, userID, limit, offset
 		TasksAvailableToUser = append(TasksAvailableToUser, tasksOfGroup...)
 	}
 
-	//Adding tasks assigned to current user
-	tasksAssignedToUser, err := s.service.store.Task().FindTasksOnUser(userID)
+	//Adding tasks assigned to the current user
+	tasksAssignedToUser, err := s.service.store.Task().FindTasksOnUser(ctx, userID)
 	if err != nil {
 		return nil, err
 	}
