@@ -1,11 +1,26 @@
 # Unitask [Backend] ![GO][go-badge]
 
 [go-badge]: https://img.shields.io/github/go-mod/go-version/SleepyIntoxicator/unitask-backend?style=plastic
+[db_schema]: ./doc/img/db_schema.jpg
 
 ## Definition
 
 University Task Manager [backend].
 Monolithic REST API server for the Unitask service.
+
+Unitask - сервис планирования процесса обучения студентов
+Key words: 
+- сервис планированиия,
+- индивидуальной траектории,
+- своевременно выдавать задания,
+- отслеживать получение заданий,
+- сроков их выполнения и сдачи,
+- равномерное распределение нагрузки,
+- отслеживание своевременного выполнения заданий,
+- общая картина учебного процесса,
+- повышение эффективности обучения.
+- Разработка сервиса планирования индивидуальной траектории обучения,
+- разработка платформы, 
 
 ## Architecture
 
@@ -29,12 +44,19 @@ Monolithic REST API server for the Unitask service.
     - serviceData - pkg for reading the initial data of the services
 
 ### Prerequisites
-- go 1.17
+- go 1.16
 - Docker & docker-compose
 
 ---
 
 The .env file from the dev environment.
+
+---
+
+
+Database schema:
+---
+![db_schema]
 
 ----
 TODO list:
